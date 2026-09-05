@@ -1,0 +1,31 @@
+{
+  "name": "lifeos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-powered personal operating system — productivity, wellness, digital wellbeing, community, and AI coaching.",
+  "scripts": {
+    "dev:client": "cd lifeos-client && npm run dev",
+    "dev:server": "cd lifeos-server && npm run dev",
+    "lint:client": "cd lifeos-client && npm run lint",
+    "lint:server": "cd lifeos-server && npm run lint",
+    "format:client": "cd lifeos-client && npm run format",
+    "format:server": "cd lifeos-server && npm run format",
+    "prepare": "husky"
+  },
+  "author": "Pawan Mahto",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-tailwindcss": "^0.8.1"
+  },
+  "lint-staged": {
+    "lifeos-client/src/**/*.{ts,tsx}": [
+      "prettier --write"
+    ],
+    "lifeos-server/src/**/*.ts": [
+      "prettier --write"
+    ]
+  }
+}
