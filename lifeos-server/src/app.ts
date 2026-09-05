@@ -1,38 +1,57 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import { env } from './config/env';
+import { errorHandler } from './middleware/errorHandler';
+import { standardLimiter } from './middleware/rateLimiter';
+import { sendSuccess } from './utils/response';
+import { NotFoundError } from './utils/errors';
 
 const app: Application = express();
 
-// Security middleware
+// Security headers
 app.use(helmet());
+
+// CORS configuration
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: env.CORS_ORIGIN,
     credentials: true,
   }),
 );
+
+// Global standard rate limiter
+app.use(standardLimiter);
 
 // Request parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Logging
-if (process.env.NODE_ENV !== 'test') {
+// Request logging
+if (env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// Health check
+// Health check endpoint
 app.get('/api/health', (_req: Request, res: Response) => {
-  res.status(200).json({
-    success: true,
-    message: 'LifeOS API is running',
-    data: {
+  sendSuccess(
+    res,
+    {
       status: 'healthy',
+      environment: env.NODE_ENV,
       timestamp: new Date().toISOString(),
     },
-  });
+    'LifeOS API is running',
+  );
 });
+
+// Catch-all 404 handler for unknown routes
+app.use((_req: Request, _res: Response, next: NextFunction) => {
+  next(new NotFoundError('The requested resource does not exist on this server'));
+});
+
+// Centralized error handler (must be last middleware)
+app.use(errorHandler);
 
 export default app;
