@@ -8,6 +8,8 @@ import { standardLimiter } from './middleware/rateLimiter';
 import { sendSuccess } from './utils/response';
 import { NotFoundError } from './utils/errors';
 
+import apiRouter from './routes';
+
 const app: Application = express();
 
 // Security headers
@@ -45,6 +47,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
     'LifeOS API is running',
   );
 });
+
+// Mount API v1 Routes
+app.use('/api/v1', apiRouter);
 
 // Catch-all 404 handler for unknown routes
 app.use((_req: Request, _res: Response, next: NextFunction) => {
