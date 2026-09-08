@@ -6,7 +6,17 @@ import { useAuthStore } from '@/store/auth.store';
 import { useQuery } from '@tanstack/react-query';
 import { taskApiService } from '@/features/tasks/services/task.service';
 import { habitApiService } from '@/features/habits/services/habit.service';
-import { CheckSquare, Repeat, Flame, Plus, ArrowRight } from 'lucide-react';
+import { healthApiService } from '@/features/health/services/health.service';
+import {
+  CheckSquare,
+  Repeat,
+  Flame,
+  Plus,
+  ArrowRight,
+  Droplet,
+  Smile,
+  HeartPulse,
+} from 'lucide-react';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -27,13 +37,49 @@ export default function DashboardPage() {
     },
   });
 
+  const { data: healthData, isLoading: isHealthLoading } = useQuery({
+    queryKey: ['health-summary', 'dashboard-preview'],
+    queryFn: async () => {
+      const res = await healthApiService.getSummary();
+      return res.data;
+    },
+  });
+
   const tasks = tasksData?.tasks || [];
   const habits = habitsData?.habits || [];
+  const health = healthData;
   const pendingCount = tasks.filter((t) => t.status === 'Pending').length;
   const bestStreak = habits.reduce((max, h) => Math.max(max, h.currentStreak), 0);
 
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  };
+
+  const getMoodEmoji = (mood?: string) => {
+    switch (mood) {
+      case 'Excellent':
+        return '🌟';
+      case 'Happy':
+        return '😊';
+      case 'Calm':
+        return '😌';
+      case 'Neutral':
+        return '😐';
+      case 'Stressed':
+        return '😰';
+      case 'Sad':
+        return '😔';
+      case 'Angry':
+        return '😠';
+      default:
+        return '✨';
+    }
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="animate-in fade-in space-y-8 duration-300">
       {/* Header with greeting */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -60,11 +106,18 @@ export default function DashboardPage() {
             <Plus className="h-4 w-4" />
             <span>New Habit</span>
           </Link>
+          <Link
+            href="/health"
+            className="inline-flex items-center space-x-2 rounded-lg border border-neutral-700 bg-neutral-900 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800"
+          >
+            <HeartPulse className="h-4 w-4" />
+            <span>Health</span>
+          </Link>
         </div>
       </div>
 
       {/* Overview Cards (Real data empty states per Rule 1: Zero Fake Data) */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Today's Tasks */}
         <div className="flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-5">
           <div>
@@ -129,27 +182,74 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Focus Time */}
+        {/* Hydration Card */}
         <div className="flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-5">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
-                Focus Time
+                Water Today
               </span>
-              <Flame className="h-4 w-4 text-neutral-500" />
+              <Droplet className="h-4 w-4 text-blue-500" />
             </div>
             <div className="mt-4">
-              <p className="text-3xl font-bold text-white">0m</p>
-              <p className="mt-1 text-xs text-neutral-500">Deep work completed today</p>
+              <p className="text-3xl font-bold text-white">
+                {isHealthLoading ? '...' : `${health?.water?.todayTotalMl ?? 0} ml`}
+              </p>
+              <p className="mt-1 text-xs text-neutral-500">
+                {health?.water && health.water.progressPercentage > 0
+                  ? `${health.water.progressPercentage}% of 2000 ml goal`
+                  : '0% completed today'}
+              </p>
             </div>
           </div>
           <div className="mt-6 flex items-center justify-between border-t border-neutral-800/60 pt-4 text-xs">
-            <span className="text-neutral-500">Ready to start</span>
+            <span className="text-neutral-500">Hydration</span>
             <Link
-              href="/focus"
+              href="/health"
               className="flex items-center space-x-1 text-neutral-300 hover:text-white"
             >
-              <span>Start Session</span>
+              <span>Log Water</span>
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Mood & Rest Card */}
+        <div className="flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-5">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
+                Wellness
+              </span>
+              <Smile className="h-4 w-4 text-amber-500" />
+            </div>
+            <div className="mt-4">
+              <p className="flex items-center gap-1.5 text-2xl font-bold text-white">
+                {isHealthLoading ? (
+                  '...'
+                ) : health?.mood?.todayLatestMood ? (
+                  <>
+                    <span>{getMoodEmoji(health.mood.todayLatestMood.mood)}</span>
+                    <span className="truncate">{health.mood.todayLatestMood.mood}</span>
+                  </>
+                ) : (
+                  'No check-in'
+                )}
+              </p>
+              <p className="mt-1 text-xs text-neutral-500">
+                {health?.sleep?.lastSession
+                  ? `Last sleep: ${formatDuration(health.sleep.lastSession.duration)}`
+                  : 'No sleep recorded'}
+              </p>
+            </div>
+          </div>
+          <div className="mt-6 flex items-center justify-between border-t border-neutral-800/60 pt-4 text-xs">
+            <span className="text-neutral-500">Health Overview</span>
+            <Link
+              href="/health"
+              className="flex items-center space-x-1 text-neutral-300 hover:text-white"
+            >
+              <span>View Health</span>
               <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
