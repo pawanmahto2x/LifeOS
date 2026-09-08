@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
 import { useQuery } from '@tanstack/react-query';
 import { taskApiService } from '@/features/tasks/services/task.service';
+import { habitApiService } from '@/features/habits/services/habit.service';
 import { CheckSquare, Repeat, Flame, Plus, ArrowRight } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -18,8 +19,18 @@ export default function DashboardPage() {
     },
   });
 
+  const { data: habitsData, isLoading: isHabitsLoading } = useQuery({
+    queryKey: ['habits', 'dashboard-preview'],
+    queryFn: async () => {
+      const res = await habitApiService.getHabits({ limit: 5 });
+      return res.data;
+    },
+  });
+
   const tasks = tasksData?.tasks || [];
+  const habits = habitsData?.habits || [];
   const pendingCount = tasks.filter((t) => t.status === 'Pending').length;
+  const bestStreak = habits.reduce((max, h) => Math.max(max, h.currentStreak), 0);
 
   return (
     <div className="space-y-8">
@@ -41,6 +52,13 @@ export default function DashboardPage() {
           >
             <Plus className="h-4 w-4" />
             <span>New Task</span>
+          </Link>
+          <Link
+            href="/habits"
+            className="inline-flex items-center space-x-2 rounded-lg border border-neutral-700 bg-neutral-900 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New Habit</span>
           </Link>
         </div>
       </div>
@@ -89,12 +107,18 @@ export default function DashboardPage() {
               <Repeat className="h-4 w-4 text-neutral-500" />
             </div>
             <div className="mt-4">
-              <p className="text-3xl font-bold text-white">0</p>
-              <p className="mt-1 text-xs text-neutral-500">Habits tracked this week</p>
+              <p className="text-3xl font-bold text-white">
+                {isHabitsLoading ? '...' : (habitsData?.total ?? 0)}
+              </p>
+              <p className="mt-1 text-xs text-neutral-500">
+                {bestStreak > 0 ? `Best active streak: ${bestStreak} days` : 'Zero active streaks'}
+              </p>
             </div>
           </div>
           <div className="mt-6 flex items-center justify-between border-t border-neutral-800/60 pt-4 text-xs">
-            <span className="text-neutral-500">Zero active streaks</span>
+            <span className="text-neutral-500">
+              {habits.length === 0 ? 'No habits yet' : `${habits.length} active`}
+            </span>
             <Link
               href="/habits"
               className="flex items-center space-x-1 text-neutral-300 hover:text-white"
@@ -188,13 +212,37 @@ export default function DashboardPage() {
               See all
             </Link>
           </div>
-          <div className="rounded-lg border border-dashed border-neutral-800 p-8 text-center">
-            <Repeat className="mx-auto mb-2 h-8 w-8 text-neutral-600" />
-            <p className="text-sm font-medium text-neutral-300">No habits tracked yet</p>
-            <p className="mt-1 text-xs text-neutral-500">
-              Build your daily rituals and start streaks in Phase 5.
-            </p>
-          </div>
+          {habits.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-neutral-800 p-8 text-center">
+              <Repeat className="mx-auto mb-2 h-8 w-8 text-neutral-600" />
+              <p className="text-sm font-medium text-neutral-300">No habits tracked yet</p>
+              <p className="mt-1 text-xs text-neutral-500">
+                Click &quot;New Habit&quot; above to build your daily rituals and streaks.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {habits.slice(0, 4).map((habit) => (
+                <div
+                  key={habit._id}
+                  className="flex items-center justify-between rounded-lg border border-neutral-800/80 bg-neutral-900/40 p-3"
+                >
+                  <div className="flex items-center space-x-2.5 truncate">
+                    <Flame
+                      className={`h-3.5 w-3.5 ${
+                        habit.currentStreak > 0 ? 'text-amber-500' : 'text-neutral-500'
+                      }`}
+                    />
+                    <span className="truncate text-xs font-medium text-white">{habit.title}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-[10px]">
+                    <span className="text-neutral-400">{habit.currentStreak}d streak</span>
+                    <span className="font-medium text-emerald-400">{habit.completionRate}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
