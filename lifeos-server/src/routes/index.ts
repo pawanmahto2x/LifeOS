@@ -6,6 +6,7 @@ import habitRoutes from './habit.routes';
 import journalRoutes from './journal.routes';
 import healthRoutes from './health.routes';
 import focusRoutes from './focus.routes';
+import digitalDetoxRoutes from './digital-detox.routes';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/habits', habitRoutes);
 router.use('/journals', journalRoutes);
 router.use('/health', healthRoutes);
 router.use('/focus', focusRoutes);
+router.use('/digital-detox', digitalDetoxRoutes);
 
 export default router;
