@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 import { ThemeProvider } from '@/providers/theme-provider';
+import { ReactQueryProvider } from '@/providers/query-provider';
 
 export const metadata: Metadata = {
   title: 'LifeOS — Personal Operating System',
@@ -26,7 +27,9 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-neutral-950 text-neutral-100">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ReactQueryProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </ReactQueryProvider>
       </body>
     </html>
   );
