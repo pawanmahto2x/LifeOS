@@ -13,6 +13,7 @@ import notificationRoutes from './notification.routes';
 import groupRoutes from './group.routes';
 import challengeRoutes from './challenge.routes';
 import aiRoutes from './ai.routes';
+import achievementRoutes from './achievement.routes';
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use('/notifications', notificationRoutes);
 router.use('/groups', groupRoutes);
 router.use('/challenges', challengeRoutes);
 router.use('/ai', aiRoutes);
+router.use('/achievements', achievementRoutes);
 
 export default router;
