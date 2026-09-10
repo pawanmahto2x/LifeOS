@@ -10,6 +10,7 @@ import digitalDetoxRoutes from './digital-detox.routes';
 import emergencyModeRoutes from './emergency-mode.routes';
 import reportRoutes from './report.routes';
 import notificationRoutes from './notification.routes';
+import groupRoutes from './group.routes';
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use('/digital-detox', digitalDetoxRoutes);
 router.use('/emergency-mode', emergencyModeRoutes);
 router.use('/reports', reportRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/groups', groupRoutes);
 
 export default router;
