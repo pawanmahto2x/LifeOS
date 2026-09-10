@@ -8,6 +8,7 @@ import healthRoutes from './health.routes';
 import focusRoutes from './focus.routes';
 import digitalDetoxRoutes from './digital-detox.routes';
 import emergencyModeRoutes from './emergency-mode.routes';
+import reportRoutes from './report.routes';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/health', healthRoutes);
 router.use('/focus', focusRoutes);
 router.use('/digital-detox', digitalDetoxRoutes);
 router.use('/emergency-mode', emergencyModeRoutes);
+router.use('/reports', reportRoutes);
 
 export default router;
