@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { achievementApiService } from '@/features/achievements/services/achievement.service';
 import { AchievementBadgeCard } from '@/features/achievements/components/achievement-badge-card';
-import { Award, Trophy, Sparkles, Filter } from 'lucide-react';
+import { Award } from 'lucide-react';
 
 const CATEGORIES = ['All', 'Productivity', 'Consistency', 'Focus', 'Wellness', 'Community'];
 

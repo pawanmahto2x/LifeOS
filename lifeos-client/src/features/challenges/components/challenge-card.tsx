@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { IChallengeListItem } from '@/types/challenge.types';
-import { Trophy, Users, Calendar, Award, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Users, Calendar, Award, ArrowRight, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface ChallengeCardProps {

@@ -4,18 +4,7 @@ import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groupApiService } from '@/features/groups/services/group.service';
-import {
-  Users,
-  Trophy,
-  Vote,
-  Copy,
-  Check,
-  LogOut,
-  Shield,
-  Trash2,
-  Crown,
-  ChevronLeft,
-} from 'lucide-react';
+import { Users, Trophy, Vote, Copy, Check, LogOut, Trash2, Crown, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function GroupDetailsPage() {

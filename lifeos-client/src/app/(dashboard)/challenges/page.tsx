@@ -6,7 +6,7 @@ import { challengeApiService } from '@/features/challenges/services/challenge.se
 import { ChallengeCard } from '@/features/challenges/components/challenge-card';
 import { CreateChallengeDialog } from '@/features/challenges/components/create-challenge-dialog';
 import { ICreateChallengeDto } from '@/types/challenge.types';
-import { Trophy, Plus, Filter } from 'lucide-react';
+import { Trophy, Plus } from 'lucide-react';
 
 const CATEGORIES = ['All', 'Productivity', 'Fitness', 'Learning', 'Mindfulness', 'Health'];
 

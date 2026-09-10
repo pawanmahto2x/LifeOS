@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ICreateGroupDto, GroupPrivacy } from '@/types/group.types';
-import { X, Users, Shield } from 'lucide-react';
+import { X, Users } from 'lucide-react';
 
 interface CreateGroupDialogProps {
   isOpen: boolean;

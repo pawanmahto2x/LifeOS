@@ -5,15 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { timelineApiService } from '@/features/timeline/services/timeline.service';
 import { TimelineCard } from '@/features/timeline/components/timeline-card';
 import { TimelineEntryType } from '@/types/timeline.types';
-import {
-  GitCommit,
-  Award,
-  CheckCircle2,
-  Flame,
-  Trophy,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { GitCommit, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const FILTER_TYPES: { label: string; value?: TimelineEntryType }[] = [
   { label: 'All Milestones' },

@@ -22,6 +22,8 @@ const eslintConfig = defineConfig([
         { argsIgnorePattern: "^_" },
       ],
       "no-console": ["warn", { allow: ["warn", "error", "info"] }],
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/purity": "warn",
     },
   },
 ]);

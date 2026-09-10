@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React from 'react';
+import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { challengeApiService } from '@/features/challenges/services/challenge.service';
 import {
@@ -19,11 +19,8 @@ import Link from 'next/link';
 
 export default function ChallengeDetailsPage() {
   const params = useParams();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const challengeId = params.challengeId as string;
-
-  const [inputProgress, setInputProgress] = useState<number | null>(null);
 
   const { data: detailsData, isLoading } = useQuery({
     queryKey: ['challenge-details', challengeId],
@@ -53,7 +50,6 @@ export default function ChallengeDetailsPage() {
     mutationFn: (progress: number) => challengeApiService.updateProgress(challengeId, progress),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['challenge-details', challengeId] });
-      setInputProgress(null);
     },
   });
 

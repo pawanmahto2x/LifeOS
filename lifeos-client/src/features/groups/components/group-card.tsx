@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { IGroup } from '@/types/group.types';
-import { Users, Lock, Globe, Shield, ArrowRight } from 'lucide-react';
+import { Users, Lock, Globe, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 interface GroupCardProps {
