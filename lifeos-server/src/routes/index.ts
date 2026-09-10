@@ -14,6 +14,7 @@ import groupRoutes from './group.routes';
 import challengeRoutes from './challenge.routes';
 import aiRoutes from './ai.routes';
 import achievementRoutes from './achievement.routes';
+import timelineRoutes from './timeline.routes';
 
 const router = Router();
 
@@ -32,5 +33,6 @@ router.use('/groups', groupRoutes);
 router.use('/challenges', challengeRoutes);
 router.use('/ai', aiRoutes);
 router.use('/achievements', achievementRoutes);
+router.use('/life-timeline', timelineRoutes);
 
 export default router;
