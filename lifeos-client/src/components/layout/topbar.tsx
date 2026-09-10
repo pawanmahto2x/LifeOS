@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
-import { Bell, Search, Menu, LogOut, User as UserIcon, Moon, Sun } from 'lucide-react';
+import { Search, Menu, LogOut, User as UserIcon, Moon, Sun } from 'lucide-react';
 import { useThemeStore } from '@/store/theme.store';
+import { NotificationBadge } from '@/features/notifications/components/notification-badge';
 
 interface TopBarProps {
   onOpenMobileNav: () => void;
@@ -67,18 +68,8 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
 
-        {/* Notifications Bell */}
-        <button
-          className="relative rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
-          title="Notifications"
-          aria-label="View notifications"
-          onClick={() => {
-            router.push('/notifications');
-          }}
-        >
-          <Bell className="h-4 w-4" />
-          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-neutral-950" />
-        </button>
+        {/* Live Notifications Badge */}
+        <NotificationBadge />
 
         {/* User Profile Dropdown */}
         <div className="relative">

@@ -9,6 +9,7 @@ import focusRoutes from './focus.routes';
 import digitalDetoxRoutes from './digital-detox.routes';
 import emergencyModeRoutes from './emergency-mode.routes';
 import reportRoutes from './report.routes';
+import notificationRoutes from './notification.routes';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/focus', focusRoutes);
 router.use('/digital-detox', digitalDetoxRoutes);
 router.use('/emergency-mode', emergencyModeRoutes);
 router.use('/reports', reportRoutes);
+router.use('/notifications', notificationRoutes);
 
 export default router;
