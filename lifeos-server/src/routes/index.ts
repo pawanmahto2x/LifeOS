@@ -11,6 +11,7 @@ import emergencyModeRoutes from './emergency-mode.routes';
 import reportRoutes from './report.routes';
 import notificationRoutes from './notification.routes';
 import groupRoutes from './group.routes';
+import challengeRoutes from './challenge.routes';
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use('/emergency-mode', emergencyModeRoutes);
 router.use('/reports', reportRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/groups', groupRoutes);
+router.use('/challenges', challengeRoutes);
 
 export default router;
