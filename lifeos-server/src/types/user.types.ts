@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 
 export type AuthProviderType = 'email' | 'google';
+export type ThemePreference = 'light' | 'dark' | 'system';
 
 export interface IUser {
   _id: Types.ObjectId;
@@ -13,6 +14,7 @@ export interface IUser {
   refreshTokenHash?: string;
   timezone: string;
   language: string;
+  theme?: ThemePreference;
   height?: number;
   weight?: number;
   gender?: string;
@@ -33,4 +35,26 @@ export interface ICreateUserDto {
   authProvider?: AuthProviderType;
   timezone?: string;
   language?: string;
+  theme?: ThemePreference;
+}
+
+export interface IChangePasswordDto {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface IUserDataExport {
+  user: IUserSafe;
+  tasks: unknown[];
+  habits: unknown[];
+  journals: unknown[];
+  health: {
+    waterLogs: unknown[];
+    sleepLogs: unknown[];
+    moodLogs: unknown[];
+  };
+  focusSessions: unknown[];
+  timeline: unknown[];
+  achievements: unknown[];
+  exportedAt: string;
 }

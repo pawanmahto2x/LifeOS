@@ -6,6 +6,7 @@ export interface IUser {
   profileImage?: string;
   timezone: string;
   language: string;
+  theme?: 'light' | 'dark' | 'system';
   height?: number;
   weight?: number;
   gender?: string;

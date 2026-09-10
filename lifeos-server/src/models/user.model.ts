@@ -59,6 +59,12 @@ const userSchema = new Schema<IUserDocument>(
       default: 'en',
       required: true,
     },
+    theme: {
+      type: String,
+      enum: ['light', 'dark', 'system'],
+      default: 'dark',
+      required: true,
+    },
     height: {
       type: Number,
       default: undefined,

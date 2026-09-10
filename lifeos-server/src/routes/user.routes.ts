@@ -2,17 +2,20 @@ import { Router } from 'express';
 import { userController } from '../controllers/user.controller';
 import { authenticateUser } from '../middleware/auth';
 import { validateRequest } from '../middleware/validate';
-import { updateProfileSchema } from '../validators/user.validator';
+import { changePasswordSchema, updateProfileSchema } from '../validators/user.validator';
 
 const router = Router();
 
-router.get('/me', authenticateUser, userController.getMe);
-router.patch(
-  '/me',
-  authenticateUser,
-  validateRequest({ body: updateProfileSchema }),
-  userController.updateProfile,
+router.use(authenticateUser);
+
+router.get('/me', userController.getMe);
+router.patch('/me', validateRequest({ body: updateProfileSchema }), userController.updateProfile);
+router.post(
+  '/change-password',
+  validateRequest({ body: changePasswordSchema }),
+  userController.changePassword,
 );
-router.delete('/me', authenticateUser, userController.deleteAccount);
+router.get('/export', userController.exportData);
+router.delete('/me', userController.deleteAccount);
 
 export default router;
