@@ -60,15 +60,15 @@ export default function JournalPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Journal</h1>
-          <p className="mt-1 text-sm text-neutral-400">
+          <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">Journal</h1>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
             Reflect on your daily experiences, emotional states, and insights in private.
           </p>
         </div>
 
         <button
           onClick={handleCreate}
-          className="inline-flex items-center justify-center space-x-2 rounded-lg bg-white px-4 py-2 text-xs font-semibold text-neutral-950 shadow transition-colors hover:bg-neutral-200"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex cursor-pointer items-center justify-center space-x-2 rounded-xl px-4 py-2.5 text-xs font-semibold shadow-xs transition-all active:scale-[0.98]"
         >
           <Plus className="h-4 w-4" />
           <span>New Entry</span>
@@ -76,16 +76,16 @@ export default function JournalPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col gap-3 border-b border-neutral-800 pb-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="border-border/80 bg-card flex flex-col gap-3 rounded-2xl border p-3 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
         <div className="flex scrollbar-none items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0">
           {moodTabs.map((mood) => (
             <button
               key={mood}
               onClick={() => setSelectedMood(mood)}
-              className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`shrink-0 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150 ${
                 selectedMood === mood
-                  ? 'bg-neutral-800 font-semibold text-white'
-                  : 'text-neutral-400 hover:bg-neutral-900 hover:text-white'
+                  ? 'bg-primary text-primary-foreground font-semibold shadow-2xs'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
               {mood}
@@ -93,14 +93,14 @@ export default function JournalPage() {
           ))}
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute top-2.5 left-3 h-3.5 w-3.5 text-neutral-500" />
+        <div className="relative w-full sm:w-72">
+          <Search className="text-muted-foreground pointer-events-none absolute top-2.5 left-3 h-3.5 w-3.5" />
           <input
             type="text"
             placeholder="Search entries or tags..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-neutral-800 bg-neutral-900/60 py-1.5 pr-3 pl-9 text-xs text-white placeholder-neutral-500 focus:border-neutral-700 focus:outline-none"
+            className="border-input bg-background/80 text-foreground placeholder:text-muted-foreground focus:ring-ring focus:border-primary/40 w-full rounded-xl border py-1.5 pr-3 pl-9 text-xs transition-colors focus:ring-2 focus:outline-none"
           />
         </div>
       </div>
@@ -111,15 +111,17 @@ export default function JournalPage() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="h-48 animate-pulse rounded-xl border border-neutral-800 bg-neutral-900/30"
+              className="border-border/80 bg-card h-48 animate-pulse rounded-2xl border"
             />
           ))}
         </div>
       ) : journals.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-neutral-800 bg-neutral-900/10 p-12 text-center">
-          <BookOpen className="mx-auto mb-3 h-10 w-10 text-neutral-600" />
-          <h3 className="text-sm font-semibold text-neutral-200">No journal entries found</h3>
-          <p className="mx-auto mt-1 max-w-sm text-xs text-neutral-500">
+        <div className="border-border/80 bg-card/60 rounded-2xl border border-dashed p-12 text-center shadow-2xs">
+          <div className="bg-primary/10 text-primary mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl">
+            <BookOpen className="h-6 w-6" />
+          </div>
+          <h3 className="text-foreground text-sm font-semibold">No journal entries found</h3>
+          <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs">
             {searchQuery || selectedMood !== 'All'
               ? 'No entries match your search or mood filter. Try resetting your filter.'
               : 'You have not written any journal entries yet. Capture your thoughts and reflections today.'}
@@ -127,7 +129,7 @@ export default function JournalPage() {
           <div className="mt-5">
             <button
               onClick={handleCreate}
-              className="inline-flex items-center space-x-1.5 rounded-lg border border-neutral-700 bg-neutral-800 px-3.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-neutral-700"
+              className="border-border bg-muted/80 text-foreground hover:bg-muted inline-flex cursor-pointer items-center space-x-1.5 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-[0.98]"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>Write your first reflection</span>

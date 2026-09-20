@@ -93,6 +93,7 @@ export function JournalDialog({ isOpen, onClose, journalToEdit }: JournalDialogP
       }
 
       await queryClient.invalidateQueries({ queryKey: ['journals'] });
+      await queryClient.refetchQueries({ queryKey: ['journals'] });
       reset();
       onClose();
     } catch (err: unknown) {
@@ -100,7 +101,7 @@ export function JournalDialog({ isOpen, onClose, journalToEdit }: JournalDialogP
         const axiosErr = err as { response?: { data?: { message?: string } } };
         setServerError(axiosErr.response?.data?.message || 'Failed to save journal entry.');
       } else {
-        setServerError('An unexpected error occurred.');
+        setServerError('An unexpected error occurred. Please check that the server is active.');
       }
     } finally {
       setIsSubmitting(false);
@@ -108,54 +109,57 @@ export function JournalDialog({ isOpen, onClose, journalToEdit }: JournalDialogP
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-neutral-800 bg-neutral-900 p-6 text-neutral-100 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
-          <h2 className="text-lg font-bold text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="border-border/80 bg-card text-card-foreground relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6 shadow-2xl transition-all">
+        <div className="border-border/80 flex items-center justify-between border-b pb-4">
+          <h2 className="text-foreground text-base font-bold">
             {journalToEdit ? 'Edit Reflection' : 'New Journal Entry'}
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer rounded-lg p-1.5 transition-colors"
+            aria-label="Close dialog"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {serverError && (
-          <div className="mt-4 rounded-lg border border-red-800 bg-red-950/60 p-3 text-xs text-red-300">
+          <div className="border-destructive/20 bg-destructive/10 text-destructive mt-4 rounded-xl border p-3 text-xs">
             {serverError}
           </div>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
           <div>
-            <label className="block text-xs font-semibold tracking-wider text-neutral-300 uppercase">
+            <label className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
               Title *
             </label>
             <input
               type="text"
               {...register('title')}
               placeholder="e.g. Morning thoughts on focus, Evening gratitude"
-              className="mt-1 block w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+              className="border-input bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring focus:border-primary/40 mt-1 block w-full rounded-xl border px-3 py-2 text-sm transition-colors focus:ring-2 focus:outline-none"
             />
-            {errors.title && <p className="mt-1 text-xs text-red-400">{errors.title.message}</p>}
+            {errors.title && (
+              <p className="text-destructive mt-1 text-xs">{errors.title.message}</p>
+            )}
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold tracking-wider text-neutral-300 uppercase">
+            <label className="text-muted-foreground mb-1.5 block text-xs font-semibold tracking-wider uppercase">
               How are you feeling? (Mood)
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {moods.map((mood) => (
                 <button
                   key={mood}
                   type="button"
                   onClick={() => setValue('mood', mood)}
-                  className={`rounded-lg border px-3 py-1 text-xs font-medium transition-colors ${
+                  className={`cursor-pointer rounded-lg border px-3 py-1 text-xs font-medium transition-all ${
                     selectedMood === mood
-                      ? 'border-white bg-white font-semibold text-neutral-950'
-                      : 'border-neutral-800 bg-neutral-800/80 text-neutral-400 hover:border-neutral-700 hover:text-white'
+                      ? 'bg-primary text-primary-foreground border-transparent font-semibold shadow-2xs'
+                      : 'border-border/80 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
                 >
                   {mood}
@@ -165,44 +169,44 @@ export function JournalDialog({ isOpen, onClose, journalToEdit }: JournalDialogP
           </div>
 
           <div>
-            <label className="block text-xs font-semibold tracking-wider text-neutral-300 uppercase">
+            <label className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
               Reflection / Notes *
             </label>
             <textarea
               rows={8}
               {...register('content')}
               placeholder="Write your reflection, lessons learned, or stream of consciousness..."
-              className="mt-1 block w-full resize-none rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-sm leading-relaxed text-white placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+              className="border-input bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring focus:border-primary/40 mt-1 block w-full resize-none rounded-xl border px-3 py-2.5 text-sm leading-relaxed transition-colors focus:ring-2 focus:outline-none"
             />
             {errors.content && (
-              <p className="mt-1 text-xs text-red-400">{errors.content.message}</p>
+              <p className="text-destructive mt-1 text-xs">{errors.content.message}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold tracking-wider text-neutral-300 uppercase">
+            <label className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
               Tags (comma-separated)
             </label>
             <input
               type="text"
               {...register('tagsString')}
               placeholder="e.g. mindfulness, deep-work, gratitude"
-              className="mt-1 block w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+              className="border-input bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring focus:border-primary/40 mt-1 block w-full rounded-xl border px-3 py-2 text-sm transition-colors focus:ring-2 focus:outline-none"
             />
           </div>
 
-          <div className="flex items-center justify-end space-x-3 border-t border-neutral-800 pt-4">
+          <div className="border-border/80 flex items-center justify-end space-x-3 border-t pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-4 py-2 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer rounded-xl px-4 py-2 text-xs font-medium transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-lg bg-white px-4 py-2 text-xs font-semibold text-neutral-950 transition-colors hover:bg-neutral-200 disabled:opacity-50"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer rounded-xl px-4 py-2 text-xs font-semibold shadow-xs transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {isSubmitting ? 'Saving...' : journalToEdit ? 'Save Changes' : 'Save Entry'}
             </button>

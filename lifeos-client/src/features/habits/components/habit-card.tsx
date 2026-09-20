@@ -23,10 +23,10 @@ export function HabitCard({
 }: HabitCardProps) {
   return (
     <div
-      className={`group relative flex flex-col justify-between rounded-xl border p-5 transition-all ${
+      className={`group relative flex flex-col justify-between rounded-2xl border p-5 shadow-2xs transition-all duration-200 ${
         habit.isPaused
-          ? 'border-neutral-800 bg-neutral-900/20 opacity-70'
-          : 'border-neutral-800 bg-neutral-900/40 hover:border-neutral-700 hover:bg-neutral-900/70'
+          ? 'border-border/60 bg-muted/20 opacity-70'
+          : 'border-border/80 bg-card hover:border-primary/40 hover:shadow-xs'
       }`}
     >
       <div>
@@ -34,17 +34,17 @@ export function HabitCard({
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex items-center space-x-2">
-              <h3 className="truncate text-sm font-semibold tracking-tight text-white">
+              <h3 className="text-foreground truncate text-sm font-semibold tracking-tight">
                 {habit.title}
               </h3>
               {habit.isPaused && (
-                <span className="rounded bg-neutral-800 px-1.5 py-0.5 text-[10px] text-neutral-400">
+                <span className="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5 text-[10px] font-semibold">
                   Paused
                 </span>
               )}
             </div>
-            <div className="flex items-center space-x-2 text-[10px] text-neutral-400">
-              <span className="rounded border border-neutral-800 bg-neutral-800/80 px-2 py-0.5 font-medium text-neutral-300">
+            <div className="text-muted-foreground flex items-center space-x-2 text-[10px]">
+              <span className="border-border/80 bg-muted/60 text-foreground rounded-md border px-2 py-0.5 font-medium">
                 {habit.frequency}
               </span>
               {habit.reminderTime && (
@@ -59,7 +59,7 @@ export function HabitCard({
           <div className="flex items-center space-x-1 opacity-0 transition-opacity group-hover:opacity-100">
             <button
               onClick={() => onTogglePause(habit)}
-              className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer rounded-lg p-1.5 transition-colors"
               title={habit.isPaused ? 'Resume habit' : 'Pause habit'}
             >
               {habit.isPaused ? (
@@ -70,14 +70,14 @@ export function HabitCard({
             </button>
             <button
               onClick={() => onEdit(habit)}
-              className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer rounded-lg p-1.5 transition-colors"
               title="Edit habit"
             >
               <Edit2 className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={() => onDelete(habit)}
-              className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-red-950/40 hover:text-red-400"
+              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer rounded-lg p-1.5 transition-colors"
               title="Delete habit"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -87,40 +87,46 @@ export function HabitCard({
 
         {/* Streak and Completion Metrics */}
         <div className="mt-5 grid grid-cols-2 gap-3">
-          <div className="rounded-lg border border-neutral-800/80 bg-neutral-950/40 p-3">
+          <div className="border-border/80 bg-muted/30 rounded-xl border p-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-neutral-500 uppercase">Streak</span>
+              <span className="text-muted-foreground text-[10px] font-semibold uppercase">
+                Streak
+              </span>
               <Flame
                 className={`h-4 w-4 ${
-                  habit.currentStreak > 0 ? 'fill-amber-500/20 text-amber-500' : 'text-neutral-600'
+                  habit.currentStreak > 0
+                    ? 'fill-amber-500/20 text-amber-500'
+                    : 'text-muted-foreground'
                 }`}
               />
             </div>
-            <p className="mt-1 text-xl font-bold text-white">
+            <p className="text-foreground mt-1 text-xl font-bold tracking-tight">
               {habit.currentStreak}{' '}
-              <span className="text-xs font-normal text-neutral-400">days</span>
+              <span className="text-muted-foreground text-xs font-normal">days</span>
             </p>
           </div>
 
-          <div className="rounded-lg border border-neutral-800/80 bg-neutral-950/40 p-3">
+          <div className="border-border/80 bg-muted/30 rounded-xl border p-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-neutral-500 uppercase">Best</span>
-              <Trophy className="h-4 w-4 text-neutral-500" />
+              <span className="text-muted-foreground text-[10px] font-semibold uppercase">
+                Best
+              </span>
+              <Trophy className="text-muted-foreground h-4 w-4" />
             </div>
-            <p className="mt-1 text-xl font-bold text-white">
+            <p className="text-foreground mt-1 text-xl font-bold tracking-tight">
               {habit.longestStreak}{' '}
-              <span className="text-xs font-normal text-neutral-400">days</span>
+              <span className="text-muted-foreground text-xs font-normal">days</span>
             </p>
           </div>
         </div>
 
         {/* Completion Rate Bar */}
         <div className="mt-4 space-y-1.5">
-          <div className="flex justify-between text-[10px] font-medium text-neutral-400">
+          <div className="text-muted-foreground flex justify-between text-[10px] font-medium">
             <span>Historical Rate</span>
-            <span className="font-semibold text-white">{habit.completionRate}%</span>
+            <span className="text-foreground font-semibold">{habit.completionRate}%</span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
+          <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
             <div
               className="h-full rounded-full bg-emerald-500 transition-all duration-500"
               style={{ width: `${Math.min(100, habit.completionRate)}%` }}
@@ -130,11 +136,11 @@ export function HabitCard({
       </div>
 
       {/* Action Footer: Complete or Skip for today */}
-      <div className="mt-6 flex items-center space-x-2 border-t border-neutral-800/60 pt-4">
+      <div className="border-border/70 mt-6 flex items-center space-x-2 border-t pt-4">
         <button
           onClick={() => onComplete(habit)}
           disabled={habit.isPaused}
-          className="inline-flex flex-1 items-center justify-center space-x-1.5 rounded-lg bg-white py-2 text-xs font-semibold text-neutral-950 transition-colors hover:bg-neutral-200 disabled:opacity-40"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex flex-1 cursor-pointer items-center justify-center space-x-1.5 rounded-xl py-2 text-xs font-semibold shadow-xs transition-all active:scale-[0.98] disabled:opacity-40"
         >
           <Check className="h-3.5 w-3.5" />
           <span>Complete</span>
@@ -143,7 +149,7 @@ export function HabitCard({
         <button
           onClick={() => onSkip(habit)}
           disabled={habit.isPaused}
-          className="inline-flex items-center justify-center rounded-lg border border-neutral-800 bg-neutral-800/60 p-2 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white disabled:opacity-40"
+          className="border-border/80 bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground inline-flex cursor-pointer items-center justify-center rounded-xl border p-2 transition-colors disabled:opacity-40"
           title="Skip today"
         >
           <RotateCcw className="h-3.5 w-3.5" />

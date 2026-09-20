@@ -233,7 +233,7 @@ export default function SettingsPage() {
       {/* Header Banner */}
       <div className="border-border bg-card rounded-2xl border p-6 shadow-sm">
         <div className="flex items-center gap-3.5">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-800 text-neutral-200">
+          <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-2xl">
             <User className="h-6 w-6" />
           </div>
           <div>
@@ -256,7 +256,7 @@ export default function SettingsPage() {
           className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold whitespace-nowrap transition-colors ${
             activeTab === 'profile'
               ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-neutral-800/50'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           }`}
         >
           <User className="h-4 w-4" />
@@ -269,7 +269,7 @@ export default function SettingsPage() {
           className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold whitespace-nowrap transition-colors ${
             activeTab === 'appearance'
               ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-neutral-800/50'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           }`}
         >
           <Palette className="h-4 w-4" />
@@ -282,7 +282,7 @@ export default function SettingsPage() {
           className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold whitespace-nowrap transition-colors ${
             activeTab === 'security'
               ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-neutral-800/50'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           }`}
         >
           <Shield className="h-4 w-4" />
@@ -295,7 +295,7 @@ export default function SettingsPage() {
           className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold whitespace-nowrap transition-colors ${
             activeTab === 'privacy'
               ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-neutral-800/50'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           }`}
         >
           <Download className="h-4 w-4" />
@@ -304,7 +304,7 @@ export default function SettingsPage() {
 
         <Link
           href="/ai-coach"
-          className="text-muted-foreground hover:text-foreground ml-auto flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold whitespace-nowrap transition-colors hover:bg-neutral-800/50"
+          className="text-muted-foreground hover:text-foreground hover:bg-muted ml-auto flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold whitespace-nowrap transition-colors"
         >
           <Bot className="h-4 w-4 text-emerald-400" />
           AI BYOK Settings
@@ -480,13 +480,11 @@ export default function SettingsPage() {
             <div
               onClick={() => handleThemeSelect('dark')}
               className={`border-border hover:border-primary cursor-pointer rounded-2xl border p-5 transition-all ${
-                theme === 'dark'
-                  ? 'border-primary bg-neutral-900/60 ring-2 ring-neutral-500/20'
-                  : 'bg-card'
+                theme === 'dark' ? 'border-primary bg-primary/10 ring-primary/20 ring-2' : 'bg-card'
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-800 text-neutral-200">
+                <div className="bg-muted text-foreground flex h-10 w-10 items-center justify-center rounded-xl">
                   <Moon className="h-5 w-5" />
                 </div>
                 {theme === 'dark' && (
@@ -578,8 +576,8 @@ export default function SettingsPage() {
             <div className="border-border bg-muted/20 mt-4 rounded-xl border p-4 text-xs">
               <p className="text-muted-foreground">
                 You signed in via{' '}
-                <span className="font-semibold text-white">{user?.authProvider}</span>. Password
-                management is handled by your identity provider.
+                <span className="text-foreground font-semibold">{user?.authProvider}</span>.
+                Password management is handled by your identity provider.
               </p>
             </div>
           ) : (
@@ -656,7 +654,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={handleExportData}
                 disabled={isExporting}
-                className="flex items-center gap-2 self-start rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-neutral-700 disabled:opacity-50 sm:self-auto"
+                className="border-border bg-muted hover:bg-muted/80 text-foreground flex items-center gap-2 self-start rounded-xl border px-4 py-2 text-xs font-semibold shadow-xs transition-all disabled:opacity-50 sm:self-auto"
               >
                 <Download className="h-4 w-4" />
                 {isExporting ? 'Exporting Archive...' : 'Download JSON Archive'}
@@ -690,8 +688,8 @@ export default function SettingsPage() {
                 ) : (
                   <div className="border-border bg-muted/20 mt-4 max-w-md space-y-3 rounded-xl border p-4">
                     <p className="text-xs font-semibold text-red-400">
-                      Type <span className="font-mono font-bold text-white">DELETE</span> to confirm
-                      permanent erasure:
+                      Type <span className="text-foreground font-mono font-bold">DELETE</span> to
+                      confirm permanent erasure:
                     </p>
                     <input
                       type="text"

@@ -12,28 +12,30 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`sticky top-0 z-30 hidden h-screen flex-col border-r border-neutral-800 bg-neutral-950 text-neutral-200 transition-all duration-300 lg:flex ${
+      className={`border-sidebar-border bg-sidebar text-sidebar-foreground sticky top-0 z-30 hidden h-screen flex-col border-r transition-all duration-300 lg:flex ${
         isCollapsed ? 'w-20' : 'w-64'
       }`}
     >
       {/* Brand Header */}
-      <div className="flex h-16 items-center justify-between border-b border-neutral-800 px-4">
+      <div className="border-sidebar-border flex h-16 items-center justify-between border-b px-4">
         {!isCollapsed && (
-          <div className="flex items-center space-x-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-sm font-bold text-neutral-950">
+          <div className="flex items-center space-x-2.5">
+            <div className="bg-primary text-primary-foreground flex h-7 w-7 items-center justify-center rounded-lg text-xs font-black shadow-xs">
               L
             </div>
-            <span className="text-lg font-extrabold tracking-tight text-white">LifeOS</span>
+            <span className="text-sidebar-foreground text-base font-bold tracking-tight">
+              LifeOS
+            </span>
           </div>
         )}
         {isCollapsed && (
-          <div className="mx-auto flex h-7 w-7 items-center justify-center rounded-lg bg-white text-sm font-bold text-neutral-950">
+          <div className="bg-primary text-primary-foreground mx-auto flex h-7 w-7 items-center justify-center rounded-lg text-xs font-black shadow-xs">
             L
           </div>
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
+          className="text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground rounded-lg p-1.5 transition-colors"
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -41,7 +43,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation List */}
-      <div className="flex-1 scrollbar-thin scrollbar-thumb-neutral-800 space-y-6 overflow-y-auto px-3 py-4">
+      <div className="flex-1 scrollbar-thin space-y-6 overflow-y-auto px-3 py-4">
         {/* Dashboard Link */}
         <div>
           {(() => {
@@ -50,10 +52,10 @@ export function Sidebar() {
             return (
               <Link
                 href={navigationConfig.dashboard.href}
-                className={`flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex items-center rounded-xl px-3 py-2 text-xs font-medium transition-all duration-150 ${
                   isActive
-                    ? 'bg-neutral-800 font-semibold text-white'
-                    : 'text-neutral-400 hover:bg-neutral-900 hover:text-white'
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-2xs'
+                    : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'
                 } ${isCollapsed ? 'justify-center' : 'space-x-3'}`}
                 title={isCollapsed ? navigationConfig.dashboard.title : undefined}
               >
@@ -68,7 +70,7 @@ export function Sidebar() {
         {navigationConfig.groups.map((group) => (
           <div key={group.groupName} className="space-y-1">
             {!isCollapsed && (
-              <h3 className="px-3 text-xs font-semibold tracking-wider text-neutral-500 uppercase">
+              <h3 className="text-muted-foreground/80 px-3 text-[10px] font-semibold tracking-wider uppercase">
                 {group.groupName}
               </h3>
             )}
@@ -80,17 +82,17 @@ export function Sidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    className={`flex items-center rounded-xl px-3 py-2 text-xs font-medium transition-all duration-150 ${
                       isActive
-                        ? 'bg-neutral-800 font-semibold text-white'
-                        : 'text-neutral-400 hover:bg-neutral-900 hover:text-white'
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-2xs'
+                        : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'
                     } ${isCollapsed ? 'justify-center' : 'space-x-3'}`}
                     title={isCollapsed ? item.title : undefined}
                   >
                     <ItemIcon className="h-4 w-4 shrink-0" />
                     {!isCollapsed && <span>{item.title}</span>}
                     {!isCollapsed && item.badge && (
-                      <span className="ml-auto rounded-full bg-neutral-800 px-2 py-0.5 text-xs text-neutral-300">
+                      <span className="bg-muted text-muted-foreground ml-auto rounded-md px-1.5 py-0.5 text-[10px] font-semibold">
                         {item.badge}
                       </span>
                     )}
@@ -103,17 +105,17 @@ export function Sidebar() {
       </div>
 
       {/* Settings Link at Bottom */}
-      <div className="border-t border-neutral-800 p-3">
+      <div className="border-sidebar-border border-t p-3">
         {(() => {
           const SettingsIcon = navigationConfig.settings.icon;
           const isActive = pathname.startsWith(navigationConfig.settings.href);
           return (
             <Link
               href={navigationConfig.settings.href}
-              className={`flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex items-center rounded-xl px-3 py-2 text-xs font-medium transition-all duration-150 ${
                 isActive
-                  ? 'bg-neutral-800 font-semibold text-white'
-                  : 'text-neutral-400 hover:bg-neutral-900 hover:text-white'
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-2xs'
+                  : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'
               } ${isCollapsed ? 'justify-center' : 'space-x-3'}`}
               title={isCollapsed ? navigationConfig.settings.title : undefined}
             >

@@ -57,7 +57,7 @@ export default function TimelinePage() {
           </div>
 
           <div className="flex items-center gap-3 self-start sm:self-auto">
-            <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 px-4 py-2">
+            <div className="border-border/80 bg-muted/40 rounded-xl border px-4 py-2">
               <span className="text-muted-foreground block text-[10px] font-semibold uppercase">
                 Total Milestones
               </span>
@@ -103,7 +103,7 @@ export default function TimelinePage() {
         </div>
       ) : entries.length === 0 ? (
         <div className="border-border bg-card rounded-2xl border p-12 text-center shadow-sm">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-800 text-neutral-400">
+          <div className="bg-primary/10 text-primary mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl">
             <GitCommit className="h-6 w-6" />
           </div>
           <h3 className="text-foreground text-sm font-semibold">No Timeline Entries Recorded</h3>
@@ -121,7 +121,7 @@ export default function TimelinePage() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-neutral-800 pt-4">
+            <div className="border-border/80 flex items-center justify-between border-t pt-4">
               <p className="text-muted-foreground text-xs">
                 Page {page} of {totalPages} ({total} entries)
               </p>
@@ -130,7 +130,7 @@ export default function TimelinePage() {
                   type="button"
                   disabled={page <= 1 || isPlaceholderData}
                   onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                  className="border-border hover:bg-muted rounded-lg border p-1.5 text-neutral-400 transition-colors hover:text-white disabled:opacity-40"
+                  className="border-border hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer rounded-lg border p-1.5 transition-colors disabled:opacity-40"
                   title="Previous Page"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -139,7 +139,7 @@ export default function TimelinePage() {
                   type="button"
                   disabled={page >= totalPages || isPlaceholderData}
                   onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                  className="border-border hover:bg-muted rounded-lg border p-1.5 text-neutral-400 transition-colors hover:text-white disabled:opacity-40"
+                  className="border-border hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer rounded-lg border p-1.5 transition-colors disabled:opacity-40"
                   title="Next Page"
                 >
                   <ChevronRight className="h-4 w-4" />

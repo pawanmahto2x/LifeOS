@@ -22,7 +22,7 @@ export function NotificationBadge() {
 
   return (
     <button
-      className="relative rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
+      className="text-muted-foreground hover:bg-muted hover:text-foreground relative rounded-lg p-2 transition-colors"
       title="Notifications"
       aria-label={`View notifications (${unreadCount} unread)`}
       onClick={() => {
@@ -31,7 +31,7 @@ export function NotificationBadge() {
     >
       <Bell className="h-4 w-4" />
       {unreadCount > 0 && (
-        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-black ring-2 ring-neutral-950">
+        <span className="ring-background absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white ring-2">
           {unreadCount > 9 ? '9+' : unreadCount}
         </span>
       )}

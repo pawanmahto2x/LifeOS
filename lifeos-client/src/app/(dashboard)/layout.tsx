@@ -9,7 +9,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-neutral-950 text-neutral-100 antialiased">
+    <div className="bg-background text-foreground selection:bg-primary selection:text-primary-foreground flex min-h-screen antialiased">
       {/* Persistent Desktop Sidebar */}
       <Sidebar />
 

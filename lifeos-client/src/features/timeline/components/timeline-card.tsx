@@ -75,7 +75,7 @@ export function TimelineCard({ entry, isLast = false }: TimelineCardProps) {
       </div>
 
       {/* Right Content Card */}
-      <div className="border-border bg-card mb-6 grow rounded-2xl border p-5 shadow-sm transition-all hover:border-neutral-700">
+      <div className="border-border bg-card hover:border-primary/50 mb-6 grow rounded-2xl border p-5 shadow-sm transition-all">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <span
             className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-0.5 text-xs font-semibold ${config.badgeClass}`}

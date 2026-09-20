@@ -12,12 +12,18 @@ export default function AchievementsPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [filterUnlockedOnly, setFilterUnlockedOnly] = useState(false);
 
-  const { data: summaryData, isLoading } = useQuery({
+  const {
+    data: summaryData,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['achievements'],
     queryFn: async () => {
       const res = await achievementApiService.getAchievements();
       return res.data;
     },
+    retry: 2,
   });
 
   const allAchievements = summaryData?.achievements || [];
@@ -111,6 +117,22 @@ export default function AchievementsPage() {
         </button>
       </div>
 
+      {/* Error State */}
+      {isError && (
+        <div className="border-destructive/20 bg-destructive/10 rounded-2xl border p-8 text-center shadow-xs">
+          <p className="text-destructive text-sm font-semibold">Failed to load achievements</p>
+          <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs">
+            Could not reach the LifeOS server. Make sure the backend server is running on port 5000.
+          </p>
+          <button
+            onClick={() => refetch()}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 mt-4 inline-flex cursor-pointer items-center rounded-xl px-4 py-2 text-xs font-semibold shadow-xs transition-all active:scale-[0.98]"
+          >
+            Retry Loading
+          </button>
+        </div>
+      )}
+
       {/* Badge Gallery */}
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -118,7 +140,7 @@ export default function AchievementsPage() {
             <div key={i} className="border-border bg-card h-44 animate-pulse rounded-2xl border" />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : !isError && filtered.length === 0 ? (
         <div className="border-border bg-card rounded-2xl border p-12 text-center shadow-sm">
           <p className="text-foreground text-sm font-semibold">No Badges Match This Filter</p>
           <p className="text-muted-foreground mt-1 text-xs">

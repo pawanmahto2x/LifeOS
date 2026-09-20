@@ -19,23 +19,23 @@ export function JournalCard({ journal, onEdit, onDelete }: JournalCardProps) {
   });
 
   const moodPillColors: Record<string, string> = {
-    Excellent: 'bg-emerald-950/50 text-emerald-300 border-emerald-800',
-    Happy: 'bg-teal-950/50 text-teal-300 border-teal-800',
-    Calm: 'bg-blue-950/50 text-blue-300 border-blue-800',
-    Neutral: 'bg-neutral-800 text-neutral-400 border-neutral-700',
-    Stressed: 'bg-amber-950/50 text-amber-300 border-amber-800',
-    Sad: 'bg-indigo-950/50 text-indigo-300 border-indigo-800',
-    Angry: 'bg-red-950/50 text-red-300 border-red-800',
+    Excellent: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    Happy: 'border-teal-500/20 bg-teal-500/10 text-teal-600 dark:text-teal-400',
+    Calm: 'border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    Neutral: 'border-border bg-muted text-muted-foreground',
+    Stressed: 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    Sad: 'border-indigo-500/20 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
+    Angry: 'border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400',
   };
 
   return (
-    <div className="group flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/40 p-5 transition-all hover:border-neutral-700 hover:bg-neutral-900/70">
+    <div className="group border-border/80 bg-card hover:border-primary/40 flex flex-col justify-between rounded-2xl border p-5 shadow-2xs transition-all duration-200 hover:shadow-xs">
       <div className="space-y-3">
         {/* Header: Date, Mood pill, Actions */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <span className="flex items-center space-x-1 text-xs text-neutral-400">
-              <Calendar className="h-3.5 w-3.5 text-neutral-500" />
+            <span className="text-muted-foreground flex items-center space-x-1 text-xs">
+              <Calendar className="text-muted-foreground h-3.5 w-3.5" />
               <span>{formattedDate}</span>
             </span>
 
@@ -54,14 +54,14 @@ export function JournalCard({ journal, onEdit, onDelete }: JournalCardProps) {
           <div className="flex items-center space-x-1 opacity-0 transition-opacity group-hover:opacity-100">
             <button
               onClick={() => onEdit(journal)}
-              className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer rounded-lg p-1.5 transition-colors"
               title="Edit entry"
             >
               <Edit2 className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={() => onDelete(journal)}
-              className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-red-950/40 hover:text-red-400"
+              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer rounded-lg p-1.5 transition-colors"
               title="Delete entry"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -71,8 +71,8 @@ export function JournalCard({ journal, onEdit, onDelete }: JournalCardProps) {
 
         {/* Title and Content snippet */}
         <div>
-          <h3 className="text-base font-bold tracking-tight text-white">{journal.title}</h3>
-          <p className="mt-2 line-clamp-4 text-xs leading-relaxed font-normal whitespace-pre-wrap text-neutral-300">
+          <h3 className="text-foreground text-base font-bold tracking-tight">{journal.title}</h3>
+          <p className="text-muted-foreground mt-2 line-clamp-4 text-xs leading-relaxed font-normal whitespace-pre-wrap">
             {journal.content}
           </p>
         </div>
@@ -80,12 +80,12 @@ export function JournalCard({ journal, onEdit, onDelete }: JournalCardProps) {
 
       {/* Tags footer */}
       {journal.tags && journal.tags.length > 0 && (
-        <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-neutral-800/60 pt-3">
-          <Tag className="mr-0.5 h-3 w-3 text-neutral-500" />
+        <div className="border-border/70 mt-4 flex flex-wrap items-center gap-1.5 border-t pt-3">
+          <Tag className="text-muted-foreground mr-0.5 h-3 w-3" />
           {journal.tags.map((tag) => (
             <span
               key={tag}
-              className="rounded-md bg-neutral-800/80 px-2 py-0.5 text-[10px] font-medium text-neutral-400"
+              className="bg-muted text-muted-foreground rounded-md px-2 py-0.5 text-[10px] font-medium"
             >
               #{tag}
             </span>

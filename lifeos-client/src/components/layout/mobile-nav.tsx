@@ -25,7 +25,7 @@ export function MobileNav({ isDrawerOpen, onCloseDrawer }: MobileNavProps) {
   return (
     <>
       {/* Fixed Bottom Navigation Bar */}
-      <nav className="fixed right-0 bottom-0 left-0 z-30 flex h-16 items-center justify-around border-t border-neutral-800 bg-neutral-950/95 px-2 backdrop-blur-lg lg:hidden">
+      <nav className="border-border/80 bg-background/95 fixed right-0 bottom-0 left-0 z-30 flex h-16 items-center justify-around border-t px-2 backdrop-blur-lg transition-colors lg:hidden">
         {primaryDestinations.map((item) => {
           const ItemIcon = item.icon;
           const isActive = pathname === item.href;
@@ -34,7 +34,9 @@ export function MobileNav({ isDrawerOpen, onCloseDrawer }: MobileNavProps) {
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center justify-center space-y-1 px-3 py-1 text-[10px] font-medium transition-colors ${
-                isActive ? 'font-semibold text-white' : 'text-neutral-400 hover:text-neutral-200'
+                isActive
+                  ? 'text-foreground font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <ItemIcon className="h-4 w-4" />
@@ -47,7 +49,9 @@ export function MobileNav({ isDrawerOpen, onCloseDrawer }: MobileNavProps) {
         <button
           onClick={onCloseDrawer}
           className={`flex flex-col items-center justify-center space-y-1 px-3 py-1 text-[10px] font-medium transition-colors ${
-            isDrawerOpen ? 'text-white' : 'text-neutral-400 hover:text-neutral-200'
+            isDrawerOpen
+              ? 'text-foreground font-semibold'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
           aria-label="More navigation options"
         >
@@ -61,19 +65,19 @@ export function MobileNav({ isDrawerOpen, onCloseDrawer }: MobileNavProps) {
         <div className="fixed inset-0 z-40 flex lg:hidden">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={onCloseDrawer}
           />
 
           {/* Drawer Content */}
-          <div className="relative z-50 flex h-full w-4/5 max-w-xs flex-col overflow-y-auto border-r border-neutral-800 bg-neutral-950 p-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
-              <span className="text-lg font-extrabold tracking-tight text-white">
+          <div className="border-border bg-sidebar text-sidebar-foreground relative z-50 flex h-full w-4/5 max-w-xs flex-col overflow-y-auto border-r p-4 shadow-2xl">
+            <div className="border-sidebar-border flex items-center justify-between border-b pb-4">
+              <span className="text-sidebar-foreground text-base font-bold tracking-tight">
                 LifeOS Modules
               </span>
               <button
                 onClick={onCloseDrawer}
-                className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-800 hover:text-white"
+                className="text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground rounded-lg p-1.5"
                 aria-label="Close navigation drawer"
               >
                 <X className="h-5 w-5" />
@@ -83,7 +87,7 @@ export function MobileNav({ isDrawerOpen, onCloseDrawer }: MobileNavProps) {
             <div className="flex-1 space-y-5 py-4">
               {navigationConfig.groups.map((group) => (
                 <div key={group.groupName} className="space-y-1">
-                  <h3 className="px-2 text-xs font-semibold tracking-wider text-neutral-500 uppercase">
+                  <h3 className="text-muted-foreground/80 px-2 text-[10px] font-semibold tracking-wider uppercase">
                     {group.groupName}
                   </h3>
                   <div className="mt-1 space-y-0.5">
@@ -95,16 +99,16 @@ export function MobileNav({ isDrawerOpen, onCloseDrawer }: MobileNavProps) {
                           key={item.href}
                           href={item.href}
                           onClick={onCloseDrawer}
-                          className={`flex items-center space-x-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
+                          className={`flex items-center space-x-3 rounded-xl px-2.5 py-2 text-xs font-medium transition-colors ${
                             isActive
-                              ? 'bg-neutral-800 font-semibold text-white'
-                              : 'text-neutral-400 hover:bg-neutral-900 hover:text-white'
+                              ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-2xs'
+                              : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'
                           }`}
                         >
                           <ItemIcon className="h-4 w-4 shrink-0" />
                           <span>{item.title}</span>
                           {item.badge && (
-                            <span className="ml-auto rounded-full bg-neutral-800 px-2 py-0.5 text-xs text-neutral-300">
+                            <span className="bg-muted text-muted-foreground ml-auto rounded-md px-1.5 py-0.5 text-[10px] font-semibold">
                               {item.badge}
                             </span>
                           )}
@@ -117,11 +121,11 @@ export function MobileNav({ isDrawerOpen, onCloseDrawer }: MobileNavProps) {
             </div>
 
             {/* Bottom settings link in drawer */}
-            <div className="border-t border-neutral-800 pt-4">
+            <div className="border-sidebar-border border-t pt-4">
               <Link
                 href="/settings"
                 onClick={onCloseDrawer}
-                className="flex items-center space-x-3 rounded-lg px-2.5 py-2 text-sm font-medium text-neutral-400 hover:bg-neutral-900 hover:text-white"
+                className="text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground flex items-center space-x-3 rounded-xl px-2.5 py-2 text-xs font-medium"
               >
                 <navigationConfig.settings.icon className="h-4 w-4 shrink-0" />
                 <span>{navigationConfig.settings.title}</span>

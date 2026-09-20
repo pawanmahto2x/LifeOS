@@ -67,32 +67,32 @@ export default function DashboardPage() {
       {/* Header with greeting */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
             Welcome back, {user?.fullName || 'User'}
           </h1>
-          <p className="mt-1 text-sm text-neutral-400">
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
             Here is your daily LifeOS overview. Ready to focus today?
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2.5">
           <Link
             href="/tasks"
-            className="inline-flex items-center space-x-2 rounded-lg bg-white px-3.5 py-2 text-xs font-semibold text-neutral-950 shadow transition-colors hover:bg-neutral-200"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center space-x-2 rounded-xl px-3.5 py-2 text-xs font-semibold shadow-xs transition-all active:scale-[0.98]"
           >
             <Plus className="h-4 w-4" />
             <span>New Task</span>
           </Link>
           <Link
             href="/focus"
-            className="inline-flex items-center space-x-2 rounded-lg border border-neutral-700 bg-neutral-900 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800"
+            className="border-border/80 bg-muted/60 text-foreground hover:bg-muted inline-flex items-center space-x-2 rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all active:scale-[0.98]"
           >
             <Clock className="h-4 w-4" />
             <span>Focus Mode</span>
           </Link>
           <Link
             href="/health"
-            className="inline-flex items-center space-x-2 rounded-lg border border-neutral-700 bg-neutral-900 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800"
+            className="border-border/80 bg-muted/60 text-foreground hover:bg-muted inline-flex items-center space-x-2 rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all active:scale-[0.98]"
           >
             <HeartPulse className="h-4 w-4" />
             <span>Health</span>
@@ -100,33 +100,35 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Overview Cards (Real data empty states per Rule 1: Zero Fake Data) */}
+      {/* Overview Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Today's Tasks */}
-        <div className="flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-5">
+        <div className="border-border/80 bg-card hover:border-primary/40 flex flex-col justify-between rounded-2xl border p-5 shadow-2xs transition-all duration-200 hover:shadow-xs">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
+              <span className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
                 Active Tasks
               </span>
-              <CheckSquare className="h-4 w-4 text-neutral-500" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                <CheckSquare className="h-4 w-4" />
+              </div>
             </div>
             <div className="mt-4">
-              <p className="text-3xl font-bold text-white">
+              <p className="text-foreground text-3xl font-bold tracking-tight">
                 {isTasksLoading ? '...' : (tasksData?.total ?? 0)}
               </p>
-              <p className="mt-1 text-xs text-neutral-500">
+              <p className="text-muted-foreground mt-1 text-xs">
                 {pendingCount} pending action {pendingCount === 1 ? 'item' : 'items'}
               </p>
             </div>
           </div>
-          <div className="mt-6 flex items-center justify-between border-t border-neutral-800/60 pt-4 text-xs">
-            <span className="text-neutral-500">
+          <div className="border-border/70 mt-6 flex items-center justify-between border-t pt-3.5 text-xs">
+            <span className="text-muted-foreground">
               {tasks.length === 0 ? 'No tasks yet' : `${tasks.length} recent`}
             </span>
             <Link
               href="/tasks"
-              className="flex items-center space-x-1 text-neutral-300 hover:text-white"
+              className="text-primary flex items-center space-x-1 font-medium hover:underline"
             >
               <span>View Tasks</span>
               <ArrowRight className="h-3 w-3" />
@@ -135,32 +137,34 @@ export default function DashboardPage() {
         </div>
 
         {/* Focus Time */}
-        <div className="flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-5">
+        <div className="border-border/80 bg-card hover:border-primary/40 flex flex-col justify-between rounded-2xl border p-5 shadow-2xs transition-all duration-200 hover:shadow-xs">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
+              <span className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
                 Focus Time
               </span>
-              <Flame className="h-4 w-4 text-amber-500" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <Flame className="h-4 w-4" />
+              </div>
             </div>
             <div className="mt-4">
-              <p className="text-3xl font-bold text-white">
+              <p className="text-foreground text-3xl font-bold tracking-tight">
                 {isFocusLoading ? '...' : `${todayFocusMinutes}m`}
               </p>
-              <p className="mt-1 text-xs text-neutral-500">
+              <p className="text-muted-foreground mt-1 text-xs">
                 {focus?.todayCompletedSessions
                   ? `${focus.todayCompletedSessions} completed sessions today`
                   : 'Deep work completed today'}
               </p>
             </div>
           </div>
-          <div className="mt-6 flex items-center justify-between border-t border-neutral-800/60 pt-4 text-xs">
-            <span className="text-neutral-500">
+          <div className="border-border/70 mt-6 flex items-center justify-between border-t pt-3.5 text-xs">
+            <span className="text-muted-foreground">
               {todayFocusMinutes > 0 ? 'Flow state active' : 'Ready to start'}
             </span>
             <Link
               href="/focus"
-              className="flex items-center space-x-1 text-neutral-300 hover:text-white"
+              className="text-primary flex items-center space-x-1 font-medium hover:underline"
             >
               <span>Start Session</span>
               <ArrowRight className="h-3 w-3" />
@@ -169,30 +173,32 @@ export default function DashboardPage() {
         </div>
 
         {/* Habits Streak */}
-        <div className="flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-5">
+        <div className="border-border/80 bg-card hover:border-primary/40 flex flex-col justify-between rounded-2xl border p-5 shadow-2xs transition-all duration-200 hover:shadow-xs">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
+              <span className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
                 Active Habits
               </span>
-              <Repeat className="h-4 w-4 text-neutral-500" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <Repeat className="h-4 w-4" />
+              </div>
             </div>
             <div className="mt-4">
-              <p className="text-3xl font-bold text-white">
+              <p className="text-foreground text-3xl font-bold tracking-tight">
                 {isHabitsLoading ? '...' : (habitsData?.total ?? 0)}
               </p>
-              <p className="mt-1 text-xs text-neutral-500">
+              <p className="text-muted-foreground mt-1 text-xs">
                 {bestStreak > 0 ? `Best active streak: ${bestStreak} days` : 'Zero active streaks'}
               </p>
             </div>
           </div>
-          <div className="mt-6 flex items-center justify-between border-t border-neutral-800/60 pt-4 text-xs">
-            <span className="text-neutral-500">
+          <div className="border-border/70 mt-6 flex items-center justify-between border-t pt-3.5 text-xs">
+            <span className="text-muted-foreground">
               {habits.length === 0 ? 'No habits yet' : `${habits.length} active`}
             </span>
             <Link
               href="/habits"
-              className="flex items-center space-x-1 text-neutral-300 hover:text-white"
+              className="text-primary flex items-center space-x-1 font-medium hover:underline"
             >
               <span>View Habits</span>
               <ArrowRight className="h-3 w-3" />
@@ -201,30 +207,32 @@ export default function DashboardPage() {
         </div>
 
         {/* Hydration Card */}
-        <div className="flex flex-col justify-between rounded-xl border border-neutral-800 bg-neutral-900/50 p-5">
+        <div className="border-border/80 bg-card hover:border-primary/40 flex flex-col justify-between rounded-2xl border p-5 shadow-2xs transition-all duration-200 hover:shadow-xs">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
+              <span className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
                 Water Today
               </span>
-              <Droplet className="h-4 w-4 text-blue-500" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                <Droplet className="h-4 w-4" />
+              </div>
             </div>
             <div className="mt-4">
-              <p className="text-3xl font-bold text-white">
+              <p className="text-foreground text-3xl font-bold tracking-tight">
                 {isHealthLoading ? '...' : `${health?.water?.todayTotalMl ?? 0} ml`}
               </p>
-              <p className="mt-1 text-xs text-neutral-500">
+              <p className="text-muted-foreground mt-1 text-xs">
                 {health?.water && health.water.progressPercentage > 0
                   ? `${health.water.progressPercentage}% of 2000 ml goal`
                   : '0% completed today'}
               </p>
             </div>
           </div>
-          <div className="mt-6 flex items-center justify-between border-t border-neutral-800/60 pt-4 text-xs">
-            <span className="text-neutral-500">Hydration</span>
+          <div className="border-border/70 mt-6 flex items-center justify-between border-t pt-3.5 text-xs">
+            <span className="text-muted-foreground">Hydration</span>
             <Link
               href="/health"
-              className="flex items-center space-x-1 text-neutral-300 hover:text-white"
+              className="text-primary flex items-center space-x-1 font-medium hover:underline"
             >
               <span>Log Water</span>
               <ArrowRight className="h-3 w-3" />
@@ -236,19 +244,19 @@ export default function DashboardPage() {
       {/* Module Overview Section */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Recent Tasks Widget */}
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-6">
+        <div className="border-border/80 bg-card rounded-2xl border p-6 shadow-2xs">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-white">Recent Tasks</h2>
-            <Link href="/tasks" className="text-xs text-neutral-400 hover:text-white">
+            <h2 className="text-foreground text-sm font-bold tracking-tight">Recent Tasks</h2>
+            <Link href="/tasks" className="text-primary text-xs font-medium hover:underline">
               See all
             </Link>
           </div>
           {tasks.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-neutral-800 p-8 text-center">
-              <CheckSquare className="mx-auto mb-2 h-8 w-8 text-neutral-600" />
-              <p className="text-sm font-medium text-neutral-300">No tasks created yet</p>
-              <p className="mt-1 text-xs text-neutral-500">
-                Click &quot;New Task&quot; above to begin organizing your daily agenda.
+            <div className="border-border/80 bg-muted/20 rounded-xl border border-dashed p-8 text-center">
+              <CheckSquare className="text-muted-foreground mx-auto mb-2 h-7 w-7" />
+              <p className="text-foreground text-xs font-semibold">No tasks created yet</p>
+              <p className="text-muted-foreground mt-1 text-[11px]">
+                Click &quot;New Task&quot; above to capture your daily agenda items.
               </p>
             </div>
           ) : (
@@ -256,23 +264,25 @@ export default function DashboardPage() {
               {tasks.slice(0, 4).map((task) => (
                 <div
                   key={task._id}
-                  className="flex items-center justify-between rounded-lg border border-neutral-800/80 bg-neutral-900/40 p-3"
+                  className="border-border/80 bg-muted/30 hover:bg-muted/60 flex items-center justify-between rounded-xl border p-3 transition-colors"
                 >
                   <div className="flex items-center space-x-2.5 truncate">
                     <span
                       className={`h-2 w-2 rounded-full ${
-                        task.status === 'Completed' ? 'bg-emerald-500' : 'bg-neutral-500'
+                        task.status === 'Completed' ? 'bg-emerald-500' : 'bg-muted-foreground'
                       }`}
                     />
                     <span
                       className={`truncate text-xs font-medium ${
-                        task.status === 'Completed' ? 'text-neutral-500 line-through' : 'text-white'
+                        task.status === 'Completed'
+                          ? 'text-muted-foreground line-through'
+                          : 'text-foreground'
                       }`}
                     >
                       {task.title}
                     </span>
                   </div>
-                  <span className="rounded border border-neutral-800 px-2 py-0.5 text-[10px] font-semibold text-neutral-400">
+                  <span className="border-border/80 bg-card text-muted-foreground rounded-md border px-2 py-0.5 text-[10px] font-semibold">
                     {task.priority}
                   </span>
                 </div>
@@ -282,19 +292,21 @@ export default function DashboardPage() {
         </div>
 
         {/* Daily Habits Widget */}
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-6">
+        <div className="border-border/80 bg-card rounded-2xl border p-6 shadow-2xs">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-white">Today&apos;s Habits</h2>
-            <Link href="/habits" className="text-xs text-neutral-400 hover:text-white">
+            <h2 className="text-foreground text-sm font-bold tracking-tight">
+              Today&apos;s Habits
+            </h2>
+            <Link href="/habits" className="text-primary text-xs font-medium hover:underline">
               See all
             </Link>
           </div>
           {habits.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-neutral-800 p-8 text-center">
-              <Repeat className="mx-auto mb-2 h-8 w-8 text-neutral-600" />
-              <p className="text-sm font-medium text-neutral-300">No habits tracked yet</p>
-              <p className="mt-1 text-xs text-neutral-500">
-                Click &quot;New Habit&quot; above to build your daily rituals and streaks.
+            <div className="border-border/80 bg-muted/20 rounded-xl border border-dashed p-8 text-center">
+              <Repeat className="text-muted-foreground mx-auto mb-2 h-7 w-7" />
+              <p className="text-foreground text-xs font-semibold">No habits tracked yet</p>
+              <p className="text-muted-foreground mt-1 text-[11px]">
+                Click &quot;New Habit&quot; to build your daily rituals and streaks.
               </p>
             </div>
           ) : (
@@ -302,19 +314,23 @@ export default function DashboardPage() {
               {habits.slice(0, 4).map((habit) => (
                 <div
                   key={habit._id}
-                  className="flex items-center justify-between rounded-lg border border-neutral-800/80 bg-neutral-900/40 p-3"
+                  className="border-border/80 bg-muted/30 hover:bg-muted/60 flex items-center justify-between rounded-xl border p-3 transition-colors"
                 >
                   <div className="flex items-center space-x-2.5 truncate">
                     <Flame
                       className={`h-3.5 w-3.5 ${
-                        habit.currentStreak > 0 ? 'text-amber-500' : 'text-neutral-500'
+                        habit.currentStreak > 0 ? 'text-amber-500' : 'text-muted-foreground'
                       }`}
                     />
-                    <span className="truncate text-xs font-medium text-white">{habit.title}</span>
+                    <span className="text-foreground truncate text-xs font-medium">
+                      {habit.title}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2 text-[10px]">
-                    <span className="text-neutral-400">{habit.currentStreak}d streak</span>
-                    <span className="font-medium text-emerald-400">{habit.completionRate}%</span>
+                    <span className="text-muted-foreground">{habit.currentStreak}d streak</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                      {habit.completionRate}%
+                    </span>
                   </div>
                 </div>
               ))}

@@ -89,15 +89,15 @@ export default function HabitsPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Habits</h1>
-          <p className="mt-1 text-sm text-neutral-400">
+          <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">Habits</h1>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
             Build consistency, track daily streaks, and cultivate long-term discipline.
           </p>
         </div>
 
         <button
           onClick={handleCreate}
-          className="inline-flex items-center justify-center space-x-2 rounded-lg bg-white px-4 py-2 text-xs font-semibold text-neutral-950 shadow transition-colors hover:bg-neutral-200"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex cursor-pointer items-center justify-center space-x-2 rounded-xl px-4 py-2.5 text-xs font-semibold shadow-xs transition-all active:scale-[0.98]"
         >
           <Plus className="h-4 w-4" />
           <span>New Habit</span>
@@ -105,15 +105,15 @@ export default function HabitsPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex scrollbar-none items-center space-x-1.5 overflow-x-auto border-b border-neutral-800 pb-2">
+      <div className="border-border/80 bg-card flex scrollbar-none items-center space-x-1.5 overflow-x-auto rounded-2xl border p-2 shadow-2xs">
         {frequencyTabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setSelectedFrequency(tab)}
-            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`shrink-0 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150 ${
               selectedFrequency === tab
-                ? 'bg-neutral-800 font-semibold text-white'
-                : 'text-neutral-400 hover:bg-neutral-900 hover:text-white'
+                ? 'bg-primary text-primary-foreground font-semibold shadow-2xs'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
           >
             {tab}
@@ -127,15 +127,17 @@ export default function HabitsPage() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-48 animate-pulse rounded-xl border border-neutral-800 bg-neutral-900/30"
+              className="border-border/80 bg-card h-48 animate-pulse rounded-2xl border"
             />
           ))}
         </div>
       ) : habits.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-neutral-800 bg-neutral-900/10 p-12 text-center">
-          <Repeat className="mx-auto mb-3 h-10 w-10 text-neutral-600" />
-          <h3 className="text-sm font-semibold text-neutral-200">No habits tracked yet</h3>
-          <p className="mx-auto mt-1 max-w-sm text-xs text-neutral-500">
+        <div className="border-border/80 bg-card/60 rounded-2xl border border-dashed p-12 text-center shadow-2xs">
+          <div className="bg-primary/10 text-primary mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl">
+            <Repeat className="h-6 w-6" />
+          </div>
+          <h3 className="text-foreground text-sm font-semibold">No habits tracked yet</h3>
+          <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs">
             {selectedFrequency !== 'All'
               ? `No ${selectedFrequency.toLowerCase()} habits found. Try switching filter tabs.`
               : 'Add your first recurring habit to start building streaks and daily momentum.'}
@@ -143,7 +145,7 @@ export default function HabitsPage() {
           <div className="mt-5">
             <button
               onClick={handleCreate}
-              className="inline-flex items-center space-x-1.5 rounded-lg border border-neutral-700 bg-neutral-800 px-3.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-neutral-700"
+              className="border-border bg-muted/80 text-foreground hover:bg-muted inline-flex cursor-pointer items-center space-x-1.5 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-[0.98]"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>Create your first habit</span>

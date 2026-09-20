@@ -22,8 +22,12 @@ export class AchievementService {
   // ─── Query Endpoints (Read-Only per API.md Section 17) ─────────────────────
 
   async getUserAchievements(userId: string): Promise<IAchievementsSummaryDto> {
-    // Automatically evaluate milestones on fetch
-    await this.evaluateAndUnlockAchievements(userId);
+    // Automatically evaluate milestones on fetch with defensive error handling
+    try {
+      await this.evaluateAndUnlockAchievements(userId);
+    } catch (evalError) {
+      console.warn('[AchievementService] Error evaluating achievements:', evalError);
+    }
 
     const unlocked = await this.repo.findByUserId(userId);
     const unlockedMap = new Map<string, AchievementDocument>();
@@ -92,11 +96,15 @@ export class AchievementService {
 
     const totalFocusMinutes = focusSessions.reduce((acc, s) => acc + (s.duration || 0), 0);
 
-    // Group water by day to find max single-day intake
+    // Group water by day to find max single-day intake (normalize L to ml)
     const waterDays = new Map<string, number>();
     for (const w of waterLogs) {
-      const day = w.loggedAt.toISOString().split('T')[0];
-      waterDays.set(day, (waterDays.get(day) || 0) + w.amount);
+      if (!w.loggedAt) continue;
+      const logDate = new Date(w.loggedAt);
+      if (isNaN(logDate.getTime())) continue;
+      const day = logDate.toISOString().split('T')[0];
+      const amountInMl = w.unit === 'L' ? (w.amount || 0) * 1000 : w.amount || 0;
+      waterDays.set(day, (waterDays.get(day) || 0) + amountInMl);
     }
     const maxDailyWater = waterDays.size > 0 ? Math.max(...Array.from(waterDays.values())) : 0;
 
@@ -104,6 +112,7 @@ export class AchievementService {
     const hasEarlyBird = sleepLogs.some((s) => {
       if (!s.wakeTime) return false;
       const d = new Date(s.wakeTime);
+      if (isNaN(d.getTime())) return false;
       const mins = d.getHours() * 60 + d.getMinutes();
       return mins <= 6 * 60 + 30;
     });
