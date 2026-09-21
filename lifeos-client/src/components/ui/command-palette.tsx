@@ -60,7 +60,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     {
       id: 'nav-dashboard',
       title: 'Dashboard Overview',
-      description: 'View daily status, tasks, streaks, and health',
+      description: 'Your personal central hub and daily summary',
       category: 'Navigation',
       icon: LayoutDashboard,
       action: () => navigate('/dashboard'),
@@ -219,15 +219,33 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     },
   ];
 
-  const filteredItems = commandItems.filter((item) => {
-    const q = query.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      item.title.toLowerCase().includes(q) ||
-      item.description?.toLowerCase().includes(q) ||
-      item.category.toLowerCase().includes(q)
-    );
-  });
+  const filteredItems = commandItems
+    .map((item) => {
+      const q = query.toLowerCase().trim();
+      if (!q) return { item, score: 0 };
+
+      const titleLower = item.title.toLowerCase();
+      const descLower = (item.description || '').toLowerCase();
+      const catLower = item.category.toLowerCase();
+
+      let score = -1;
+      if (titleLower === q) {
+        score = 100;
+      } else if (titleLower.startsWith(q)) {
+        score = 80;
+      } else if (titleLower.includes(q)) {
+        score = 60;
+      } else if (catLower.startsWith(q)) {
+        score = 40;
+      } else if (descLower.includes(q)) {
+        score = 20;
+      }
+
+      return { item, score };
+    })
+    .filter((entry) => entry.score >= 0)
+    .sort((a, b) => b.score - a.score)
+    .map((entry) => entry.item);
 
   useEffect(() => {
     setSelectedIndex(0);

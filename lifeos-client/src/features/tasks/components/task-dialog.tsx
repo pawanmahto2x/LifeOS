@@ -26,6 +26,24 @@ interface TaskDialogProps {
   taskToEdit?: ITask | null;
 }
 
+function parseSafeDate(dateStr?: string): string | undefined {
+  if (!dateStr || !dateStr.trim()) return undefined;
+  const trimmed = dateStr.trim();
+  const dmyMatch = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (dmyMatch) {
+    const [, day, month, year] = dmyMatch;
+    const parsed = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString();
+    }
+  }
+  const d = new Date(trimmed);
+  if (!isNaN(d.getTime())) {
+    return d.toISOString();
+  }
+  return undefined;
+}
+
 export function TaskDialog({ isOpen, onClose, taskToEdit }: TaskDialogProps) {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,7 +87,7 @@ export function TaskDialog({ isOpen, onClose, taskToEdit }: TaskDialogProps) {
         description: data.description?.trim() || undefined,
         category: data.category?.trim() || 'General',
         priority: data.priority as TaskPriority,
-        dueDate: data.dueDate?.trim() ? new Date(data.dueDate).toISOString() : undefined,
+        dueDate: parseSafeDate(data.dueDate),
         status: (data.status || 'Pending') as TaskStatus,
       };
 
@@ -79,10 +97,9 @@ export function TaskDialog({ isOpen, onClose, taskToEdit }: TaskDialogProps) {
         await taskApiService.createTask(payload);
       }
 
-      await queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      await queryClient.refetchQueries({ queryKey: ['tasks'] });
       reset();
       onClose();
+      await queryClient.invalidateQueries({ queryKey: ['tasks'] });
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'response' in err) {
         const axiosErr = err as { response?: { data?: { message?: string } } };
