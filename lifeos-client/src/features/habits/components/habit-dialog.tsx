@@ -63,8 +63,8 @@ export function HabitDialog({ isOpen, onClose, habitToEdit }: HabitDialogProps) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  // Reminder time 12-hour picker state
-  const [reminderEnabled, setReminderEnabled] = useState(false);
+  // Reminder time 12-hour picker state - enabled by default
+  const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderHour, setReminderHour] = useState('08');
   const [reminderMinute, setReminderMinute] = useState('00');
   const [reminderPeriod, setReminderPeriod] = useState<'AM' | 'PM'>('AM');
@@ -83,7 +83,7 @@ export function HabitDialog({ isOpen, onClose, habitToEdit }: HabitDialogProps) 
       description: '',
       frequency: 'Daily',
       targetDays: 30,
-      reminderTime: '',
+      reminderTime: '08:00',
     },
   });
 
@@ -111,9 +111,9 @@ export function HabitDialog({ isOpen, onClose, habitToEdit }: HabitDialogProps) 
         description: '',
         frequency: 'Daily',
         targetDays: 30,
-        reminderTime: '',
+        reminderTime: '08:00',
       });
-      setReminderEnabled(false);
+      setReminderEnabled(true);
       setReminderHour('08');
       setReminderMinute('00');
       setReminderPeriod('AM');
