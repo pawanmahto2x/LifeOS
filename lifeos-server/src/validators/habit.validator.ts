@@ -2,24 +2,52 @@ import { z } from 'zod';
 
 export const habitFrequencyEnum = z.enum(['Daily', 'Weekly', 'Monthly']);
 
+export const reminderTimeSchema = z
+  .string()
+  .trim()
+  .transform((val) => {
+    if (!val) return undefined;
+    const match12 = val.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (match12) {
+      let h = parseInt(match12[1], 10);
+      const m = match12[2];
+      const meridiem = match12[3].toUpperCase();
+      if (meridiem === 'PM' && h < 12) h += 12;
+      if (meridiem === 'AM' && h === 12) h = 0;
+      return `${h.toString().padStart(2, '0')}:${m}`;
+    }
+    return val;
+  })
+  .refine(
+    (val) => !val || /^([01]\d|2[0-3]):([0-5]\d)$/.test(val),
+    'Reminder time must be in HH:mm format (e.g. 08:30 or 08:30 AM)',
+  )
+  .optional();
+
 export const createHabitSchema = z.object({
   title: z.string().trim().min(1, 'Habit title is required'),
+  description: z.string().trim().max(500, 'Description cannot exceed 500 characters').optional(),
   frequency: habitFrequencyEnum.default('Daily'),
-  targetDays: z.coerce.number().int().positive().max(31).default(7),
-  reminderTime: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Reminder time must be in 24-hour HH:mm format')
-    .optional(),
+  targetDays: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(365, 'Target duration cannot exceed 365 days')
+    .default(30),
+  reminderTime: reminderTimeSchema,
 });
 
 export const updateHabitSchema = z.object({
   title: z.string().trim().min(1).optional(),
+  description: z.string().trim().max(500, 'Description cannot exceed 500 characters').optional(),
   frequency: habitFrequencyEnum.optional(),
-  targetDays: z.coerce.number().int().positive().max(31).optional(),
-  reminderTime: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Reminder time must be in 24-hour HH:mm format')
+  targetDays: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(365, 'Target duration cannot exceed 365 days')
     .optional(),
+  reminderTime: reminderTimeSchema,
 });
 
 export const queryHabitsSchema = z.object({

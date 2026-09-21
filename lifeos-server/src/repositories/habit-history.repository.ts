@@ -34,6 +34,28 @@ export class HabitHistoryRepository {
       .sort({ completionDate: 1 })
       .exec();
   }
+
+  async getLatestCompletedEntry(
+    habitId: string,
+    since: Date,
+  ): Promise<IHabitHistoryDocument | null> {
+    return HabitHistory.findOne({
+      habitId,
+      completed: true,
+      completionDate: { $gte: since },
+    }).exec();
+  }
+
+  async getRecentCompletionsForHabits(
+    habitIds: (string | import('mongoose').Types.ObjectId)[],
+    since: Date,
+  ): Promise<IHabitHistoryDocument[]> {
+    return HabitHistory.find({
+      habitId: { $in: habitIds },
+      completed: true,
+      completionDate: { $gte: since },
+    }).exec();
+  }
 }
 
 export const habitHistoryRepository = new HabitHistoryRepository();

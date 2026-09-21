@@ -13,6 +13,27 @@ interface HabitCardProps {
   onDelete: (habit: IHabit) => void;
 }
 
+function formatReminderTime(time24?: string): string {
+  if (!time24) return '';
+  const parts = time24.split(':');
+  if (parts.length !== 2) return time24;
+  let h = parseInt(parts[0], 10);
+  const m = parts[1];
+  const period = h >= 12 ? 'PM' : 'AM';
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return `${h}:${m} ${period}`;
+}
+
+function formatTargetDuration(days: number): string {
+  if (days >= 365) return '1 Year (365d)';
+  if (days >= 180) return '6 Months (180d)';
+  if (days >= 90) return '3 Months (90d)';
+  if (days >= 60) return '2 Months (60d)';
+  if (days >= 30) return '1 Month (30d)';
+  return `${days} days`;
+}
+
 export function HabitCard({
   habit,
   onComplete,
@@ -38,19 +59,29 @@ export function HabitCard({
                 {habit.title}
               </h3>
               {habit.isPaused && (
-                <span className="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5 text-[10px] font-semibold">
+                <span className="rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
                   Paused
                 </span>
               )}
             </div>
-            <div className="text-muted-foreground flex items-center space-x-2 text-[10px]">
+
+            {habit.description && (
+              <p className="text-muted-foreground line-clamp-2 pt-0.5 text-xs">
+                {habit.description}
+              </p>
+            )}
+
+            <div className="text-muted-foreground flex flex-wrap items-center gap-2 pt-1 text-[10px]">
               <span className="border-border/80 bg-muted/60 text-foreground rounded-md border px-2 py-0.5 font-medium">
                 {habit.frequency}
               </span>
+              <span className="border-border/80 bg-muted/40 text-muted-foreground rounded-md border px-2 py-0.5 font-medium">
+                Goal: {formatTargetDuration(habit.targetDays)}
+              </span>
               {habit.reminderTime && (
                 <span className="flex items-center space-x-1">
-                  <Clock className="h-3 w-3" />
-                  <span>{habit.reminderTime}</span>
+                  <Clock className="text-primary h-3 w-3" />
+                  <span>{formatReminderTime(habit.reminderTime)}</span>
                 </span>
               )}
             </div>
@@ -60,7 +91,7 @@ export function HabitCard({
             <button
               onClick={() => onTogglePause(habit)}
               className="text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer rounded-lg p-1.5 transition-colors"
-              title={habit.isPaused ? 'Resume habit' : 'Pause habit'}
+              title={habit.isPaused ? 'Resume habit streak' : 'Pause habit (freezes streak)'}
             >
               {habit.isPaused ? (
                 <Play className="h-3.5 w-3.5" />
@@ -102,7 +133,13 @@ export function HabitCard({
             </div>
             <p className="text-foreground mt-1 text-xl font-bold tracking-tight">
               {habit.currentStreak}{' '}
-              <span className="text-muted-foreground text-xs font-normal">days</span>
+              <span className="text-muted-foreground text-xs font-normal">
+                {habit.frequency === 'Daily'
+                  ? 'days'
+                  : habit.frequency === 'Weekly'
+                    ? 'weeks'
+                    : 'months'}
+              </span>
             </p>
           </div>
 
@@ -115,7 +152,13 @@ export function HabitCard({
             </div>
             <p className="text-foreground mt-1 text-xl font-bold tracking-tight">
               {habit.longestStreak}{' '}
-              <span className="text-muted-foreground text-xs font-normal">days</span>
+              <span className="text-muted-foreground text-xs font-normal">
+                {habit.frequency === 'Daily'
+                  ? 'days'
+                  : habit.frequency === 'Weekly'
+                    ? 'weeks'
+                    : 'months'}
+              </span>
             </p>
           </div>
         </div>
@@ -123,7 +166,7 @@ export function HabitCard({
         {/* Completion Rate Bar */}
         <div className="mt-4 space-y-1.5">
           <div className="text-muted-foreground flex justify-between text-[10px] font-medium">
-            <span>Historical Rate</span>
+            <span>Consistency Rate</span>
             <span className="text-foreground font-semibold">{habit.completionRate}%</span>
           </div>
           <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
@@ -137,20 +180,36 @@ export function HabitCard({
 
       {/* Action Footer: Complete or Skip for today */}
       <div className="border-border/70 mt-6 flex items-center space-x-2 border-t pt-4">
-        <button
-          onClick={() => onComplete(habit)}
-          disabled={habit.isPaused}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex flex-1 cursor-pointer items-center justify-center space-x-1.5 rounded-xl py-2 text-xs font-semibold shadow-xs transition-all active:scale-[0.98] disabled:opacity-40"
-        >
-          <Check className="h-3.5 w-3.5" />
-          <span>Complete</span>
-        </button>
+        {habit.isCompletedToday ? (
+          <button
+            disabled
+            className="inline-flex flex-1 cursor-default items-center justify-center space-x-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 py-2 text-xs font-semibold text-emerald-600 shadow-xs dark:text-emerald-400"
+          >
+            <Check className="h-3.5 w-3.5" />
+            <span>
+              {habit.frequency === 'Weekly'
+                ? 'Completed This Week'
+                : habit.frequency === 'Monthly'
+                  ? 'Completed This Month'
+                  : 'Completed Today'}
+            </span>
+          </button>
+        ) : (
+          <button
+            onClick={() => onComplete(habit)}
+            disabled={habit.isPaused}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex flex-1 cursor-pointer items-center justify-center space-x-1.5 rounded-xl py-2 text-xs font-semibold shadow-xs transition-all active:scale-[0.98] disabled:opacity-40"
+          >
+            <Check className="h-3.5 w-3.5" />
+            <span>Complete</span>
+          </button>
+        )}
 
         <button
           onClick={() => onSkip(habit)}
-          disabled={habit.isPaused}
+          disabled={habit.isPaused || habit.isCompletedToday}
           className="border-border/80 bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground inline-flex cursor-pointer items-center justify-center rounded-xl border p-2 transition-colors disabled:opacity-40"
-          title="Skip today"
+          title={habit.isCompletedToday ? 'Already completed' : 'Skip today'}
         >
           <RotateCcw className="h-3.5 w-3.5" />
         </button>

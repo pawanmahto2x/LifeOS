@@ -4,6 +4,7 @@ export interface IHabit {
   _id: string;
   userId: string;
   title: string;
+  description?: string;
   frequency: HabitFrequency;
   reminderTime?: string;
   targetDays: number;
@@ -12,6 +13,7 @@ export interface IHabit {
   completionRate: number;
   isPaused: boolean;
   isDeleted: boolean;
+  isCompletedToday?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -28,6 +30,7 @@ export interface IHabitHistory {
 
 export interface ICreateHabitPayload {
   title: string;
+  description?: string;
   frequency?: HabitFrequency;
   reminderTime?: string;
   targetDays?: number;
@@ -35,6 +38,7 @@ export interface ICreateHabitPayload {
 
 export interface IUpdateHabitPayload {
   title?: string;
+  description?: string;
   frequency?: HabitFrequency;
   reminderTime?: string;
   targetDays?: number;

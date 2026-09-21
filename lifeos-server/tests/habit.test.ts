@@ -121,6 +121,32 @@ class MockHabitHistoryRepository extends HabitHistoryRepository {
   async countTotalLogs(habitId: string): Promise<number> {
     return this.history.filter((h) => h.habitId.toString() === habitId).length;
   }
+
+  async getLatestCompletedEntry(
+    habitId: string,
+    since: Date,
+  ): Promise<IHabitHistoryDocument | null> {
+    const entry = this.history.find(
+      (h) =>
+        h.habitId.toString() === habitId &&
+        h.completed &&
+        h.completionDate.getTime() >= since.getTime(),
+    );
+    return entry || null;
+  }
+
+  async getRecentCompletionsForHabits(
+    habitIds: unknown[],
+    since: Date,
+  ): Promise<IHabitHistoryDocument[]> {
+    const ids = (habitIds as unknown[]).map((id) => String(id));
+    return this.history.filter(
+      (h) =>
+        ids.includes(h.habitId.toString()) &&
+        h.completed &&
+        h.completionDate.getTime() >= since.getTime(),
+    );
+  }
 }
 
 describe('Phase 5 - Habit Tracking Service Unit Tests', () => {
@@ -169,6 +195,18 @@ describe('Phase 5 - Habit Tracking Service Unit Tests', () => {
     assert.strictEqual(completed.currentStreak, 1);
     assert.strictEqual(completed.longestStreak, 1);
     assert.strictEqual(completed.completionRate, 100);
+  });
+
+  it('should prevent completing the same habit multiple times on the same day', async () => {
+    await assert.rejects(
+      async () => {
+        await habitService.completeHabit(userA, habitId);
+      },
+      {
+        name: 'BadRequestError',
+        message: 'Habit has already been completed today',
+      },
+    );
   });
 
   it('should pause and resume a habit correctly', async () => {

@@ -18,6 +18,11 @@ const habitSchema = new Schema<IHabitDocument>(
       required: [true, 'Habit title is required'],
       trim: true,
     },
+    description: {
+      type: String,
+      trim: true,
+      default: undefined,
+    },
     frequency: {
       type: String,
       enum: ['Daily', 'Weekly', 'Monthly'] as HabitFrequency[],

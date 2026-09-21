@@ -29,29 +29,50 @@ export default function HabitsPage() {
 
   const habits = data?.habits || [];
 
+  const [actionError, setActionError] = useState<string | null>(null);
+
   // Complete mutation
   const completeMutation = useMutation({
     mutationFn: async (habit: IHabit) => {
+      setActionError(null);
       return habitApiService.completeHabit(habit._id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+    onError: (err: unknown) => {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const axiosErr = err as { response?: { data?: { message?: string } } };
+        setActionError(axiosErr.response?.data?.message || 'Failed to complete habit.');
+      } else {
+        setActionError('Failed to complete habit.');
+      }
     },
   });
 
   // Skip mutation
   const skipMutation = useMutation({
     mutationFn: async (habit: IHabit) => {
+      setActionError(null);
       return habitApiService.skipHabit(habit._id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+    onError: (err: unknown) => {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const axiosErr = err as { response?: { data?: { message?: string } } };
+        setActionError(axiosErr.response?.data?.message || 'Failed to skip habit.');
+      } else {
+        setActionError('Failed to skip habit.');
+      }
     },
   });
 
   // Toggle pause mutation
   const togglePauseMutation = useMutation({
     mutationFn: async (habit: IHabit) => {
+      setActionError(null);
       if (habit.isPaused) {
         return habitApiService.resumeHabit(habit._id);
       }
@@ -60,15 +81,32 @@ export default function HabitsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
     },
+    onError: (err: unknown) => {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const axiosErr = err as { response?: { data?: { message?: string } } };
+        setActionError(axiosErr.response?.data?.message || 'Failed to update habit status.');
+      } else {
+        setActionError('Failed to update habit status.');
+      }
+    },
   });
 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (habit: IHabit) => {
+      setActionError(null);
       return habitApiService.deleteHabit(habit._id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+    onError: (err: unknown) => {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const axiosErr = err as { response?: { data?: { message?: string } } };
+        setActionError(axiosErr.response?.data?.message || 'Failed to delete habit.');
+      } else {
+        setActionError('Failed to delete habit.');
+      }
     },
   });
 
@@ -103,6 +141,18 @@ export default function HabitsPage() {
           <span>New Habit</span>
         </button>
       </div>
+
+      {actionError && (
+        <div className="border-destructive/20 bg-destructive/10 text-destructive flex items-center justify-between rounded-xl border p-3 text-xs">
+          <span>{actionError}</span>
+          <button
+            onClick={() => setActionError(null)}
+            className="hover:text-foreground ml-3 cursor-pointer font-bold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="border-border/80 bg-card flex scrollbar-none items-center space-x-1.5 overflow-x-auto rounded-2xl border p-2 shadow-2xs">
