@@ -56,6 +56,13 @@ export class HabitHistoryRepository {
       completionDate: { $gte: since },
     }).exec();
   }
+
+  async deleteEntry(habitId: string, since: Date): Promise<IHabitHistoryDocument | null> {
+    return HabitHistory.findOneAndDelete({
+      habitId,
+      completionDate: { $gte: since },
+    }).exec();
+  }
 }
 
 export const habitHistoryRepository = new HabitHistoryRepository();

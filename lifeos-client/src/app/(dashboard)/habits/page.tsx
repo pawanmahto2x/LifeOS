@@ -69,6 +69,25 @@ export default function HabitsPage() {
     },
   });
 
+  // Undo mutation (reverts accidental completion)
+  const undoMutation = useMutation({
+    mutationFn: async (habit: IHabit) => {
+      setActionError(null);
+      return habitApiService.undoHabit(habit._id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+    onError: (err: unknown) => {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const axiosErr = err as { response?: { data?: { message?: string } } };
+        setActionError(axiosErr.response?.data?.message || 'Failed to undo habit action.');
+      } else {
+        setActionError('Failed to undo habit action.');
+      }
+    },
+  });
+
   // Toggle pause mutation
   const togglePauseMutation = useMutation({
     mutationFn: async (habit: IHabit) => {
@@ -210,6 +229,7 @@ export default function HabitsPage() {
               habit={habit}
               onComplete={(h) => completeMutation.mutate(h)}
               onSkip={(h) => skipMutation.mutate(h)}
+              onUndo={(h) => undoMutation.mutate(h)}
               onTogglePause={(h) => togglePauseMutation.mutate(h)}
               onEdit={handleEdit}
               onDelete={(h) => deleteMutation.mutate(h)}

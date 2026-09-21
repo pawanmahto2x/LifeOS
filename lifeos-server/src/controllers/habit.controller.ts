@@ -81,6 +81,19 @@ export class HabitController {
     }
   };
 
+  undoHabit = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) throw new UnauthorizedError();
+      const habitId = Array.isArray(req.params.habitId)
+        ? req.params.habitId[0]
+        : req.params.habitId;
+      const habit = await this.service.undoHabit(req.user.userId, habitId);
+      sendSuccess(res, habit, 'Habit action reverted successfully.');
+    } catch (error) {
+      next(error);
+    }
+  };
+
   pauseHabit = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user) throw new UnauthorizedError();

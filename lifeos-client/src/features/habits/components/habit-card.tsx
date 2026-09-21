@@ -8,6 +8,7 @@ interface HabitCardProps {
   habit: IHabit;
   onComplete: (habit: IHabit) => void;
   onSkip: (habit: IHabit) => void;
+  onUndo: (habit: IHabit) => void;
   onTogglePause: (habit: IHabit) => void;
   onEdit: (habit: IHabit) => void;
   onDelete: (habit: IHabit) => void;
@@ -38,6 +39,7 @@ export function HabitCard({
   habit,
   onComplete,
   onSkip,
+  onUndo,
   onTogglePause,
   onEdit,
   onDelete,
@@ -52,7 +54,7 @@ export function HabitCard({
     >
       <div>
         {/* Card Header: Title, Pause indicator, Actions */}
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex items-center space-x-2">
               <h3 className="text-foreground truncate text-sm font-semibold tracking-tight">
@@ -87,11 +89,13 @@ export function HabitCard({
             </div>
           </div>
 
-          <div className="flex items-center space-x-1 opacity-0 transition-opacity group-hover:opacity-100">
+          {/* Actions: Always visible on mobile, reveals on hover on desktop */}
+          <div className="flex shrink-0 items-center space-x-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
             <button
               onClick={() => onTogglePause(habit)}
               className="text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer rounded-lg p-1.5 transition-colors"
               title={habit.isPaused ? 'Resume habit streak' : 'Pause habit (freezes streak)'}
+              aria-label={habit.isPaused ? 'Resume habit' : 'Pause habit'}
             >
               {habit.isPaused ? (
                 <Play className="h-3.5 w-3.5" />
@@ -103,6 +107,7 @@ export function HabitCard({
               onClick={() => onEdit(habit)}
               className="text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer rounded-lg p-1.5 transition-colors"
               title="Edit habit"
+              aria-label="Edit habit"
             >
               <Edit2 className="h-3.5 w-3.5" />
             </button>
@@ -110,6 +115,7 @@ export function HabitCard({
               onClick={() => onDelete(habit)}
               className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer rounded-lg p-1.5 transition-colors"
               title="Delete habit"
+              aria-label="Delete habit"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -178,21 +184,24 @@ export function HabitCard({
         </div>
       </div>
 
-      {/* Action Footer: Complete or Skip for today */}
+      {/* Action Footer: Complete, Undo, or Skip */}
       <div className="border-border/70 mt-6 flex items-center space-x-2 border-t pt-4">
         {habit.isCompletedToday ? (
           <button
-            disabled
-            className="inline-flex flex-1 cursor-default items-center justify-center space-x-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 py-2 text-xs font-semibold text-emerald-600 shadow-xs dark:text-emerald-400"
+            onClick={() => onUndo(habit)}
+            className="group/undo inline-flex flex-1 cursor-pointer items-center justify-center space-x-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 py-2 text-xs font-semibold text-emerald-600 shadow-xs transition-colors hover:border-amber-500/40 hover:bg-amber-500/10 hover:text-amber-600 dark:text-emerald-400 dark:hover:text-amber-400"
+            title="Accidentally completed? Click to undo completion"
           >
-            <Check className="h-3.5 w-3.5" />
-            <span>
+            <Check className="h-3.5 w-3.5 group-hover/undo:hidden" />
+            <RotateCcw className="hidden h-3.5 w-3.5 group-hover/undo:inline" />
+            <span className="group-hover/undo:hidden">
               {habit.frequency === 'Weekly'
                 ? 'Completed This Week'
                 : habit.frequency === 'Monthly'
                   ? 'Completed This Month'
                   : 'Completed Today'}
             </span>
+            <span className="hidden group-hover/undo:inline">Undo Completion</span>
           </button>
         ) : (
           <button
@@ -205,14 +214,27 @@ export function HabitCard({
           </button>
         )}
 
-        <button
-          onClick={() => onSkip(habit)}
-          disabled={habit.isPaused || habit.isCompletedToday}
-          className="border-border/80 bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground inline-flex cursor-pointer items-center justify-center rounded-xl border p-2 transition-colors disabled:opacity-40"
-          title={habit.isCompletedToday ? 'Already completed' : 'Skip today'}
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-        </button>
+        {habit.isCompletedToday ? (
+          <button
+            onClick={() => onUndo(habit)}
+            disabled={habit.isPaused}
+            className="border-border/80 bg-muted/60 text-muted-foreground inline-flex cursor-pointer items-center justify-center rounded-xl border p-2 transition-colors hover:border-amber-500/40 hover:bg-amber-500/10 hover:text-amber-600 disabled:opacity-40 dark:hover:text-amber-400"
+            title="Undo completion (revert streak)"
+            aria-label="Undo completion"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          <button
+            onClick={() => onSkip(habit)}
+            disabled={habit.isPaused}
+            className="border-border/80 bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground inline-flex cursor-pointer items-center justify-center rounded-xl border p-2 transition-colors disabled:opacity-40"
+            title="Skip today"
+            aria-label="Skip today"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
     </div>
   );

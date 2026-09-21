@@ -147,6 +147,20 @@ class MockHabitHistoryRepository extends HabitHistoryRepository {
         h.completionDate.getTime() >= since.getTime(),
     );
   }
+
+  async deleteEntry(
+    habitId: string,
+    since: Date,
+  ): Promise<IHabitHistoryDocument | null> {
+    const idx = this.history.findIndex(
+      (h) =>
+        h.habitId.toString() === habitId &&
+        h.completionDate.getTime() >= since.getTime(),
+    );
+    if (idx === -1) return null;
+    const [deleted] = this.history.splice(idx, 1);
+    return deleted;
+  }
 }
 
 describe('Phase 5 - Habit Tracking Service Unit Tests', () => {
@@ -207,6 +221,17 @@ describe('Phase 5 - Habit Tracking Service Unit Tests', () => {
         message: 'Habit has already been completed today',
       },
     );
+  });
+
+  it('should revert/undo accidental habit completion and restore streak', async () => {
+    const undone = await habitService.undoHabit(userA, habitId);
+    assert.strictEqual(undone.currentStreak, 0);
+    assert.strictEqual(undone.completionRate, 0);
+
+    // After undoing, user can complete again!
+    const reCompleted = await habitService.completeHabit(userA, habitId);
+    assert.strictEqual(reCompleted.currentStreak, 1);
+    assert.strictEqual(reCompleted.completionRate, 100);
   });
 
   it('should pause and resume a habit correctly', async () => {

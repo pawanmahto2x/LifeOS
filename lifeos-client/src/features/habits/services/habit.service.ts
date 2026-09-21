@@ -47,6 +47,11 @@ export const habitApiService = {
     return response.data;
   },
 
+  async undoHabit(habitId: string): Promise<IApiResponse<IHabit>> {
+    const response = await apiClient.post<IApiResponse<IHabit>>(`/habits/${habitId}/undo`);
+    return response.data;
+  },
+
   async pauseHabit(habitId: string): Promise<IApiResponse<IHabit>> {
     const response = await apiClient.patch<IApiResponse<IHabit>>(`/habits/${habitId}/pause`);
     return response.data;

@@ -29,6 +29,8 @@ router.post('/:habitId/complete', habitController.completeHabit);
 
 router.post('/:habitId/skip', habitController.skipHabit);
 
+router.post('/:habitId/undo', habitController.undoHabit);
+
 router.patch('/:habitId/pause', habitController.pauseHabit);
 
 router.patch('/:habitId/resume', habitController.resumeHabit);

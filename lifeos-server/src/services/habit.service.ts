@@ -228,6 +228,48 @@ export class HabitService {
     } as unknown as IHabitDocument;
   }
 
+  async undoHabit(userId: string, habitId: string): Promise<IHabitDocument> {
+    const habit = await this.getHabitById(userId, habitId);
+
+    const today = this.getTodayDateOnly();
+    let periodStart = today;
+
+    if (habit.frequency === 'Weekly') {
+      periodStart = this.getStartOfWeek(today);
+    } else if (habit.frequency === 'Monthly') {
+      periodStart = this.getStartOfMonth(today);
+    }
+
+    const deletedEntry = await this.historyRepo.deleteEntry(habitId, periodStart);
+    if (!deletedEntry) {
+      throw new BadRequestError('No habit entry recorded for this period to undo');
+    }
+
+    // If reverting a completed action, decrement current streak
+    const newStreak = deletedEntry.completed
+      ? Math.max(0, habit.currentStreak - 1)
+      : habit.currentStreak;
+
+    const totalCompletions = await this.historyRepo.countCompletions(habitId);
+    const totalLogs = await this.historyRepo.countTotalLogs(habitId);
+    const newCompletionRate = totalLogs > 0 ? Math.round((totalCompletions / totalLogs) * 100) : 0;
+
+    const updated = await this.habitRepo.updateById(habitId, {
+      currentStreak: newStreak,
+      completionRate: newCompletionRate,
+    });
+
+    if (!updated) {
+      throw new NotFoundError('Habit not found');
+    }
+
+    const doc = updated.toObject ? updated.toObject() : updated;
+    return {
+      ...doc,
+      isCompletedToday: false,
+    } as unknown as IHabitDocument;
+  }
+
   async pauseHabit(userId: string, habitId: string): Promise<IHabitDocument> {
     await this.getHabitById(userId, habitId);
 
