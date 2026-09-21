@@ -76,7 +76,25 @@ function TasksContent() {
     setIsDialogOpen(true);
   };
 
-  const statusTabs = ['All', 'Pending', 'In Progress', 'Completed'];
+  const statusTabs = ['All', 'Pending', 'Completed'];
+
+  const priorityWeight: Record<string, number> = {
+    Urgent: 4,
+    High: 3,
+    Medium: 2,
+    Low: 1,
+  };
+
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (a.status === 'Completed' && b.status !== 'Completed') return 1;
+    if (a.status !== 'Completed' && b.status === 'Completed') return -1;
+    const weightA = priorityWeight[a.priority] || 0;
+    const weightB = priorityWeight[b.priority] || 0;
+    if (weightA !== weightB) {
+      return weightB - weightA;
+    }
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   return (
     <div className="space-y-6">
@@ -173,7 +191,7 @@ function TasksContent() {
         </div>
       ) : (
         <div className="space-y-2.5">
-          {tasks.map((task) => (
+          {sortedTasks.map((task) => (
             <TaskItem
               key={task._id}
               task={task}

@@ -25,7 +25,7 @@ export default function DashboardPage() {
   const { data: tasksData, isLoading: isTasksLoading } = useQuery({
     queryKey: ['tasks', 'dashboard-preview'],
     queryFn: async () => {
-      const res = await taskApiService.getTasks({ limit: 5 });
+      const res = await taskApiService.getTasks({ limit: 50 });
       return res.data;
     },
   });
@@ -61,6 +61,22 @@ export default function DashboardPage() {
   const pendingCount = tasks.filter((t) => t.status === 'Pending').length;
   const bestStreak = habits.reduce((max, h) => Math.max(max, h.currentStreak), 0);
   const todayFocusMinutes = focus?.todayFocusMinutes ?? 0;
+
+  const priorityWeight: Record<string, number> = {
+    Urgent: 4,
+    High: 3,
+    Medium: 2,
+    Low: 1,
+  };
+
+  const prioritizedTasks = [...tasks].sort((a, b) => {
+    if (a.status === 'Completed' && b.status !== 'Completed') return 1;
+    if (a.status !== 'Completed' && b.status === 'Completed') return -1;
+    const weightA = priorityWeight[a.priority] || 0;
+    const weightB = priorityWeight[b.priority] || 0;
+    if (weightA !== weightB) return weightB - weightA;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   return (
     <div className="animate-in fade-in space-y-8 duration-300">
@@ -115,7 +131,7 @@ export default function DashboardPage() {
             </div>
             <div className="mt-4">
               <p className="text-foreground text-3xl font-bold tracking-tight">
-                {isTasksLoading ? '...' : (tasksData?.total ?? 0)}
+                {isTasksLoading ? '...' : pendingCount}
               </p>
               <p className="text-muted-foreground mt-1 text-xs">
                 {pendingCount} pending action {pendingCount === 1 ? 'item' : 'items'}
@@ -124,7 +140,7 @@ export default function DashboardPage() {
           </div>
           <div className="border-border/70 mt-6 flex items-center justify-between border-t pt-3.5 text-xs">
             <span className="text-muted-foreground">
-              {tasks.length === 0 ? 'No tasks yet' : `${tasks.length} recent`}
+              {pendingCount === 0 ? 'All caught up' : `${pendingCount} active`}
             </span>
             <Link
               href="/tasks"
@@ -261,7 +277,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {tasks.slice(0, 4).map((task) => (
+              {prioritizedTasks.slice(0, 4).map((task) => (
                 <div
                   key={task._id}
                   className="border-border/80 bg-muted/30 hover:bg-muted/60 flex items-center justify-between rounded-xl border p-3 transition-colors"
