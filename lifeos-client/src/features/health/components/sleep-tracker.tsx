@@ -124,11 +124,11 @@ export function SleepTracker() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => quickLogMutation.mutate(8)}
             disabled={quickLogMutation.isPending || quickNapMutation.isPending}
-            className="border-border bg-background text-foreground hover:bg-muted cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
+            className="border-border bg-background text-foreground hover:bg-muted cursor-pointer rounded-xl border px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
             title="Quick log 8 hours of night rest (11:00 PM – 7:00 AM)"
           >
             +8 hrs
@@ -136,7 +136,7 @@ export function SleepTracker() {
           <button
             onClick={() => quickNapMutation.mutate(60)}
             disabled={quickLogMutation.isPending || quickNapMutation.isPending}
-            className="flex cursor-pointer items-center gap-1 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-600 transition-colors hover:bg-amber-500/20 disabled:opacity-50 dark:text-amber-400"
+            className="flex cursor-pointer items-center gap-1 rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-xs font-medium text-amber-600 transition-colors hover:bg-amber-500/20 disabled:opacity-50 dark:text-amber-400"
             title="Quick log a 1-hour daytime power nap"
           >
             <Zap className="h-3 w-3" />
@@ -144,70 +144,56 @@ export function SleepTracker() {
           </button>
           <button
             onClick={() => {
-              setDialogMode('nap');
-              setIsDialogOpen(true);
-            }}
-            className="border-border bg-background text-foreground hover:bg-muted flex cursor-pointer items-center gap-1 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors"
-            title="Record custom daytime nap duration"
-          >
-            <Zap className="h-3 w-3 text-amber-500" />
-            Custom Nap
-          </button>
-          <button
-            onClick={() => {
               setDialogMode('night');
               setIsDialogOpen(true);
             }}
-            className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-indigo-700"
-            title="Record custom sleep session"
+            className="flex cursor-pointer items-center gap-1 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-indigo-700"
+            title="Record custom sleep or nap session"
           >
             <Plus className="h-3.5 w-3.5" />
-            Custom Sleep
+            Custom
           </button>
         </div>
       </div>
 
-      {/* Productivity Coach Alert: Exceeded Daily Sleep Limit (>= 9 hours) */}
+      {/* Productivity Coach Alert: Compact within-card design */}
       {isSleepLimitExceeded && (
-        <div className="mb-6 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-indigo-500/10 p-4 shadow-xs sm:p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3.5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-500">
-                <Zap className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h4 className="text-foreground text-sm font-semibold">
-                    Daily Sleep Quota Exceeded ({formatDuration(todayTotalSleepMinutes)} logged
-                    today)
-                  </h4>
-                  <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                    Battery 100%
-                  </span>
-                </div>
-                <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                  You&apos;ve enjoyed plenty of deep, restorative rest today! Your mental battery is
-                  fully charged. Time to channel this rest and energy into high-value productive
-                  work.
-                </p>
-              </div>
+        <div className="mb-4 overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-indigo-500/10 p-3.5 shadow-xs">
+          <div className="flex items-start gap-2.5">
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-500">
+              <Zap className="h-4 w-4" />
             </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <h4 className="text-foreground truncate text-xs font-semibold">
+                  Daily Sleep Quota Reached
+                </h4>
+                <span className="shrink-0 rounded-full bg-amber-500/20 px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
+                  {formatDuration(todayTotalSleepMinutes)}
+                </span>
+              </div>
+              <p className="text-muted-foreground mt-1 text-[11px] leading-relaxed">
+                Battery 100%! You&apos;ve had plenty of rest today. Channel this energy into
+                focused, productive work.
+              </p>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <Link
-                href="/focus"
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-indigo-700 active:scale-[0.98]"
-              >
-                <span>Start Focus</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link
-                href="/tasks"
-                className="border-border bg-background hover:bg-muted text-foreground inline-flex cursor-pointer items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold shadow-xs transition-colors"
-              >
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                <span>View Tasks</span>
-              </Link>
+              {/* 2-Column Buttons Guaranteed to Fit Inside the Card */}
+              <div className="mt-2.5 grid grid-cols-2 gap-2">
+                <Link
+                  href="/focus"
+                  className="flex items-center justify-center gap-1 rounded-lg bg-indigo-600 px-2 py-1.5 text-center text-xs font-semibold text-white shadow-xs transition-colors hover:bg-indigo-700"
+                >
+                  <span>Start Focus</span>
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+                <Link
+                  href="/tasks"
+                  className="border-border bg-background hover:bg-muted text-foreground flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-center text-xs font-semibold shadow-xs transition-colors"
+                >
+                  <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                  <span>View Tasks</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -215,29 +201,29 @@ export function SleepTracker() {
 
       {/* Latest Session Card */}
       {latestLog ? (
-        <div className="bg-muted/40 border-border/50 mb-6 rounded-xl border p-4">
-          <div className="mb-2 flex items-center justify-between">
+        <div className="bg-muted/40 border-border/50 mb-4 rounded-xl border p-3.5">
+          <div className="mb-1.5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isNapSession(latestLog) ? (
-                <Zap className="h-4 w-4 text-amber-500" />
+                <Zap className="h-3.5 w-3.5 text-amber-500" />
               ) : (
-                <Clock className="h-4 w-4 text-indigo-500" />
+                <Clock className="h-3.5 w-3.5 text-indigo-500" />
               )}
               <span className="text-muted-foreground text-xs font-medium">
-                {isNapSession(latestLog) ? 'Latest Daytime Nap' : 'Last Recorded Night Sleep'}
+                {isNapSession(latestLog) ? 'Latest Daytime Nap' : 'Last Night Sleep'}
               </span>
               <span
-                className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold ${
+                className={`py-0.2 rounded-full border px-1.5 text-[9px] font-semibold ${
                   isNapSession(latestLog)
                     ? 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
                     : 'border-indigo-500/20 bg-indigo-500/10 text-indigo-500'
                 }`}
               >
-                {isNapSession(latestLog) ? '⚡ Daytime Nap' : '🌙 Night Sleep'}
+                {isNapSession(latestLog) ? '⚡ Nap' : '🌙 Night'}
               </span>
             </div>
             <span
-              className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${getQualityBadgeColor(
+              className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold ${getQualityBadgeColor(
                 latestLog.quality,
               )}`}
             >
@@ -245,8 +231,8 @@ export function SleepTracker() {
             </span>
           </div>
 
-          <div className="mb-2 flex items-baseline gap-2">
-            <span className="text-foreground text-2xl font-bold">
+          <div className="mb-1 flex items-baseline gap-2">
+            <span className="text-foreground text-xl font-bold">
               {formatDuration(latestLog.duration)}
             </span>
             <span className="text-muted-foreground text-xs">
@@ -265,13 +251,13 @@ export function SleepTracker() {
           </div>
 
           {latestLog.notes && (
-            <p className="text-muted-foreground border-border/40 mt-2 border-t pt-2 text-xs italic">
+            <p className="text-muted-foreground border-border/40 mt-1 border-t pt-1 text-xs italic">
               &quot;{latestLog.notes}&quot;
             </p>
           )}
         </div>
       ) : (
-        <div className="bg-muted/20 border-border/50 mb-6 rounded-xl border p-4 text-center">
+        <div className="bg-muted/20 border-border/50 mb-4 rounded-xl border p-4 text-center">
           <p className="text-muted-foreground text-xs">
             No sleep records logged yet. Record your last night&apos;s sleep or log a power nap to
             start tracking.
@@ -281,7 +267,7 @@ export function SleepTracker() {
 
       {/* Sleep History */}
       <div>
-        <h4 className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider uppercase">
+        <h4 className="text-muted-foreground mb-2.5 text-xs font-semibold tracking-wider uppercase">
           Sleep History
         </h4>
 
@@ -294,16 +280,20 @@ export function SleepTracker() {
             No sleep history recorded yet.
           </div>
         ) : (
-          <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+          <div
+            className={`space-y-2 overflow-y-auto pr-1 ${
+              isSleepLimitExceeded ? 'max-h-40' : 'max-h-56'
+            }`}
+          >
             {logs.map((log) => {
               const logId = log.id || log._id || '';
               const nap = isNapSession(log);
               return (
                 <div
                   key={logId}
-                  className="border-border bg-background/50 hover:bg-muted/50 flex items-center justify-between rounded-xl border px-3.5 py-2.5 transition-colors"
+                  className="border-border bg-background/50 hover:bg-muted/50 flex items-center justify-between rounded-xl border px-3 py-2 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     {nap ? (
                       <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
                         <Zap className="h-4 w-4" />
@@ -314,8 +304,8 @@ export function SleepTracker() {
                       </div>
                     )}
                     <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-foreground text-sm font-medium">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-foreground text-xs font-semibold">
                           {formatDuration(log.duration)}
                         </p>
                         <span
@@ -328,7 +318,7 @@ export function SleepTracker() {
                           {nap ? '⚡ Nap' : '🌙 Night'}
                         </span>
                         <span
-                          className={`py-0.2 rounded-full border px-2 text-[9px] font-semibold ${getQualityBadgeColor(
+                          className={`py-0.2 rounded-full border px-1.5 text-[9px] font-semibold ${getQualityBadgeColor(
                             log.quality,
                           )}`}
                         >
@@ -339,14 +329,13 @@ export function SleepTracker() {
                         {new Date(log.sleepTime).toLocaleDateString([], {
                           month: 'short',
                           day: 'numeric',
-                          year: 'numeric',
                         })}{' '}
                         •{' '}
                         {new Date(log.sleepTime).toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}{' '}
-                        to{' '}
+                        –{' '}
                         {new Date(log.wakeTime).toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit',
