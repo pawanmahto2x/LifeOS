@@ -18,6 +18,26 @@ export function SleepTracker() {
     },
   });
 
+  const quickLogMutation = useMutation({
+    mutationFn: async (hours: number) => {
+      const now = new Date();
+      // Anchor wake time to today at 7:00 AM (or current time if before 7:00 AM)
+      const wakeTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0);
+      const sleepTime = new Date(wakeTime.getTime() - hours * 60 * 60 * 1000);
+
+      await healthApiService.logSleep({
+        sleepTime: sleepTime.toISOString(),
+        wakeTime: wakeTime.toISOString(),
+        quality: 'Good',
+        notes: `Quick logged ${hours}h rest`,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['health-sleep'] });
+      queryClient.invalidateQueries({ queryKey: ['health-summary'] });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await healthApiService.deleteSleepLog(id);
@@ -65,13 +85,31 @@ export function SleepTracker() {
           </div>
         </div>
 
-        <button
-          onClick={() => setIsDialogOpen(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-indigo-700"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Record Sleep
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => quickLogMutation.mutate(7)}
+            disabled={quickLogMutation.isPending}
+            className="border-border bg-background text-foreground hover:bg-muted cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors"
+            title="Quick log 7 hours of rest (12:00 AM – 7:00 AM)"
+          >
+            +7 hrs
+          </button>
+          <button
+            onClick={() => quickLogMutation.mutate(8)}
+            disabled={quickLogMutation.isPending}
+            className="border-border bg-background text-foreground hover:bg-muted cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors"
+            title="Quick log 8 hours of rest (11:00 PM – 7:00 AM)"
+          >
+            +8 hrs
+          </button>
+          <button
+            onClick={() => setIsDialogOpen(true)}
+            className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-indigo-700"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Custom
+          </button>
+        </div>
       </div>
 
       {/* Latest Session Card */}
