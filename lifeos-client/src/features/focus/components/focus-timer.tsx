@@ -15,6 +15,8 @@ import {
   Minimize2,
   AlertCircle,
   CheckSquare,
+  ShieldAlert,
+  X,
 } from 'lucide-react';
 
 type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak' | 'custom';
@@ -31,9 +33,15 @@ export function FocusTimer() {
   const [activeSession, setActiveSession] = useState<FocusSession | null>(null);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [focusGuardAlert, setFocusGuardAlert] = useState<{
+    type: 'reset' | 'warning';
+    awaySeconds: number;
+  } | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const leftAtRef = useRef<number | null>(null);
+  const originalTitleRef = useRef<string>('');
 
   // Fetch active user tasks to attach
   const { data: tasksData } = useQuery({
@@ -141,6 +149,71 @@ export function FocusTimer() {
     };
   }, [isRunning, timeLeft]);
 
+  // Capture original page title
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      originalTitleRef.current = document.title || 'LifeOS';
+    }
+  }, []);
+
+  // Focus Guard: Auto-detect tab switch & window minimization
+  useEffect(() => {
+    if (!isRunning) {
+      if (typeof document !== 'undefined' && originalTitleRef.current) {
+        document.title = originalTitleRef.current;
+      }
+      leftAtRef.current = null;
+      return;
+    }
+
+    const mins = Math.floor(timeLeft / 60);
+    const secs = timeLeft % 60;
+    const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    if (!document.hidden) {
+      document.title = `(${formatted}) Focus Mode • LifeOS`;
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // User switched away from LifeOS
+        leftAtRef.current = Date.now();
+        document.title = '⚠️ Return to Focus! • LifeOS';
+        setDistractions((prev) => prev + 1);
+      } else {
+        // User returned to LifeOS tab
+        if (leftAtRef.current) {
+          const awaySeconds = Math.round((Date.now() - leftAtRef.current) / 1000);
+          leftAtRef.current = null;
+
+          if (awaySeconds >= 60) {
+            // Away for 60 seconds or more: Reset timer back to start!
+            handleReset();
+            setFocusGuardAlert({
+              type: 'reset',
+              awaySeconds,
+            });
+          } else if (awaySeconds >= 2) {
+            // Away for under 60 seconds: Log as distraction
+            setFocusGuardAlert({
+              type: 'warning',
+              awaySeconds,
+            });
+          }
+        }
+        document.title = `(${formatted}) Focus Mode • LifeOS`;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (typeof document !== 'undefined' && originalTitleRef.current) {
+        document.title = originalTitleRef.current;
+      }
+    };
+  }, [isRunning, timeLeft, mode, customMinutes]);
+
   const handleModeChange = (newMode: TimerMode) => {
     if (isRunning) return;
     setMode(newMode);
@@ -181,6 +254,9 @@ export function FocusTimer() {
     setActiveSession(null);
     setDistractions(0);
     setTimeLeft(getTargetDurationSeconds(mode, customMinutes));
+    if (typeof document !== 'undefined' && originalTitleRef.current) {
+      document.title = originalTitleRef.current;
+    }
   };
 
   const handleDistraction = () => {
@@ -215,6 +291,40 @@ export function FocusTimer() {
           : ''
       }`}
     >
+      {/* Focus Guard Notification Alert */}
+      {focusGuardAlert && (
+        <div
+          className={`mb-6 flex w-full items-start justify-between gap-3 rounded-2xl border p-4 text-xs shadow-sm transition-all ${
+            focusGuardAlert.type === 'reset'
+              ? 'border-rose-500/40 bg-rose-500/10 text-rose-400'
+              : 'border-amber-500/40 bg-amber-500/10 text-amber-500'
+          }`}
+        >
+          <div className="flex items-start gap-2.5">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="text-sm font-bold">
+                {focusGuardAlert.type === 'reset'
+                  ? 'Focus Block Reset (> 1 Min Away)'
+                  : 'Tab Switch Detected (+1 Distraction)'}
+              </p>
+              <p className="mt-1 leading-relaxed opacity-95">
+                {focusGuardAlert.type === 'reset'
+                  ? `You left LifeOS for ${focusGuardAlert.awaySeconds} seconds (exceeding the 1-minute limit). The timer has been reset to the start point so your focus discipline remains authentic.`
+                  : `You were away from the focus tab for ${focusGuardAlert.awaySeconds} seconds. Stay locked in to maintain your flow state!`}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setFocusGuardAlert(null)}
+            className="hover:bg-foreground/10 cursor-pointer rounded-lg p-1 transition-colors"
+            title="Dismiss alert"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Top Controls Bar */}
       <div className="mb-8 flex w-full items-center justify-between">
         {/* Mode Selector Tabs */}
