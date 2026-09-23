@@ -68,7 +68,7 @@ export function MoodTracker() {
   };
 
   return (
-    <div className="border-border bg-card rounded-2xl border p-6 shadow-sm">
+    <div className="border-border bg-card flex h-full flex-col rounded-2xl border p-6 shadow-sm">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
@@ -120,7 +120,7 @@ export function MoodTracker() {
       )}
 
       {/* Mood History */}
-      <div>
+      <div className="flex min-h-0 flex-1 flex-col">
         <h4 className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider uppercase">
           Mood History
         </h4>
@@ -132,7 +132,7 @@ export function MoodTracker() {
             No mood logs recorded yet. Check in above to start tracking your emotional trends!
           </div>
         ) : (
-          <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+          <div className="max-h-56 flex-1 space-y-2 overflow-y-auto pr-1">
             {logs.map((log) => {
               const logId = log.id || log._id || '';
               return (

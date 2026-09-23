@@ -44,7 +44,7 @@ export function WaterTracker() {
   const logs = waterData?.logs ?? [];
 
   return (
-    <div className="border-border bg-card rounded-2xl border p-6 shadow-sm">
+    <div className="border-border bg-card flex h-full flex-col rounded-2xl border p-6 shadow-sm">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500">
@@ -106,7 +106,7 @@ export function WaterTracker() {
       </div>
 
       {/* Today's Logs */}
-      <div>
+      <div className="flex min-h-0 flex-1 flex-col">
         <h4 className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider uppercase">
           Today&apos;s Logs
         </h4>
@@ -120,7 +120,7 @@ export function WaterTracker() {
             No water intake logged today. Drink a glass of water to start!
           </div>
         ) : (
-          <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+          <div className="max-h-56 flex-1 space-y-2 overflow-y-auto pr-1">
             {logs.map((log) => {
               const logId = log.id || log._id || '';
               return (

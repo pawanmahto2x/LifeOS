@@ -110,7 +110,7 @@ export function SleepTracker() {
   };
 
   return (
-    <div className="border-border bg-card rounded-2xl border p-6 shadow-sm">
+    <div className="border-border bg-card flex h-full flex-col rounded-2xl border p-6 shadow-sm">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-500">
@@ -156,118 +156,110 @@ export function SleepTracker() {
         </div>
       </div>
 
-      {/* Productivity Coach Alert: Compact within-card design */}
-      {isSleepLimitExceeded && (
-        <div className="mb-4 overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-indigo-500/10 p-3.5 shadow-xs">
-          <div className="flex items-start gap-2.5">
-            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-500">
-              <Zap className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-1.5">
-                <h4 className="text-foreground truncate text-xs font-semibold">
-                  Daily Sleep Quota Reached
-                </h4>
-                <span className="shrink-0 rounded-full bg-amber-500/20 px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
-                  {formatDuration(todayTotalSleepMinutes)}
+      {/* Unified Rest Status & Smart Coach Card */}
+      <div className="bg-muted/40 border-border/50 mb-6 rounded-xl border p-4">
+        {latestLog ? (
+          <>
+            <div className="mb-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {isNapSession(latestLog) ? (
+                  <Zap className="h-4 w-4 text-amber-500" />
+                ) : (
+                  <Clock className="h-4 w-4 text-indigo-500" />
+                )}
+                <span className="text-muted-foreground text-xs font-medium">
+                  {isNapSession(latestLog) ? 'Latest Daytime Nap' : 'Last Night Sleep'}
+                </span>
+                <span
+                  className={`py-0.2 rounded-full border px-1.5 text-[9px] font-semibold ${
+                    isNapSession(latestLog)
+                      ? 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                      : 'border-indigo-500/20 bg-indigo-500/10 text-indigo-500'
+                  }`}
+                >
+                  {isNapSession(latestLog) ? '⚡ Nap' : '🌙 Night'}
                 </span>
               </div>
-              <p className="text-muted-foreground mt-1 text-[11px] leading-relaxed">
-                Battery 100%! You&apos;ve had plenty of rest today. Channel this energy into
-                focused, productive work.
-              </p>
-
-              {/* 2-Column Buttons Guaranteed to Fit Inside the Card */}
-              <div className="mt-2.5 grid grid-cols-2 gap-2">
-                <Link
-                  href="/focus"
-                  className="flex items-center justify-center gap-1 rounded-lg bg-indigo-600 px-2 py-1.5 text-center text-xs font-semibold text-white shadow-xs transition-colors hover:bg-indigo-700"
-                >
-                  <span>Start Focus</span>
-                  <ArrowRight className="h-3 w-3" />
-                </Link>
-                <Link
-                  href="/tasks"
-                  className="border-border bg-background hover:bg-muted text-foreground flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-center text-xs font-semibold shadow-xs transition-colors"
-                >
-                  <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                  <span>View Tasks</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Latest Session Card */}
-      {latestLog ? (
-        <div className="bg-muted/40 border-border/50 mb-4 rounded-xl border p-3.5">
-          <div className="mb-1.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {isNapSession(latestLog) ? (
-                <Zap className="h-3.5 w-3.5 text-amber-500" />
-              ) : (
-                <Clock className="h-3.5 w-3.5 text-indigo-500" />
-              )}
-              <span className="text-muted-foreground text-xs font-medium">
-                {isNapSession(latestLog) ? 'Latest Daytime Nap' : 'Last Night Sleep'}
-              </span>
               <span
-                className={`py-0.2 rounded-full border px-1.5 text-[9px] font-semibold ${
-                  isNapSession(latestLog)
-                    ? 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                    : 'border-indigo-500/20 bg-indigo-500/10 text-indigo-500'
-                }`}
+                className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold ${getQualityBadgeColor(
+                  latestLog.quality,
+                )}`}
               >
-                {isNapSession(latestLog) ? '⚡ Nap' : '🌙 Night'}
+                {latestLog.quality}
               </span>
             </div>
-            <span
-              className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold ${getQualityBadgeColor(
-                latestLog.quality,
-              )}`}
-            >
-              {latestLog.quality}
-            </span>
-          </div>
 
-          <div className="mb-1 flex items-baseline gap-2">
-            <span className="text-foreground text-xl font-bold">
-              {formatDuration(latestLog.duration)}
-            </span>
-            <span className="text-muted-foreground text-xs">
-              (
-              {new Date(latestLog.sleepTime).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}{' '}
-              –{' '}
-              {new Date(latestLog.wakeTime).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-              )
-            </span>
-          </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-foreground text-2xl font-bold">
+                {formatDuration(latestLog.duration)}
+              </span>
+              <span className="text-muted-foreground text-xs">
+                (
+                {new Date(latestLog.sleepTime).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}{' '}
+                –{' '}
+                {new Date(latestLog.wakeTime).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+                )
+              </span>
+            </div>
 
-          {latestLog.notes && (
-            <p className="text-muted-foreground border-border/40 mt-1 border-t pt-1 text-xs italic">
-              &quot;{latestLog.notes}&quot;
+            {latestLog.notes && !isSleepLimitExceeded && (
+              <p className="text-muted-foreground border-border/40 mt-1.5 border-t pt-1.5 text-xs italic">
+                &quot;{latestLog.notes}&quot;
+              </p>
+            )}
+          </>
+        ) : (
+          <div className="text-muted-foreground py-2 text-center text-xs">
+            No sleep records logged yet. Record your rest or log a power nap to start tracking.
+          </div>
+        )}
+
+        {/* Integrated Productivity Coach Alert (Active when daily sleep quota >= 9h) */}
+        {isSleepLimitExceeded && (
+          <div className="mt-3 border-t border-amber-500/20 pt-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Zap className="h-3.5 w-3.5 text-amber-500" />
+                <span className="text-foreground text-xs font-semibold">
+                  Daily Sleep Quota Reached
+                </span>
+              </div>
+              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
+                {formatDuration(todayTotalSleepMinutes)} today
+              </span>
+            </div>
+            <p className="text-muted-foreground mt-1 text-[11px] leading-snug">
+              Battery 100%! Ready to channel your energy into deep, productive work:
             </p>
-          )}
-        </div>
-      ) : (
-        <div className="bg-muted/20 border-border/50 mb-4 rounded-xl border p-4 text-center">
-          <p className="text-muted-foreground text-xs">
-            No sleep records logged yet. Record your last night&apos;s sleep or log a power nap to
-            start tracking.
-          </p>
-        </div>
-      )}
+            <div className="mt-2.5 grid grid-cols-2 gap-2">
+              <Link
+                href="/focus"
+                className="flex items-center justify-center gap-1 rounded-lg bg-indigo-600 px-2 py-1.5 text-center text-xs font-semibold text-white shadow-xs transition-colors hover:bg-indigo-700"
+              >
+                <span>Start Focus</span>
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+              <Link
+                href="/tasks"
+                className="border-border bg-background hover:bg-muted text-foreground flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-center text-xs font-semibold shadow-xs transition-colors"
+              >
+                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                <span>View Tasks</span>
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Sleep History */}
-      <div>
-        <h4 className="text-muted-foreground mb-2.5 text-xs font-semibold tracking-wider uppercase">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <h4 className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider uppercase">
           Sleep History
         </h4>
 
@@ -280,11 +272,7 @@ export function SleepTracker() {
             No sleep history recorded yet.
           </div>
         ) : (
-          <div
-            className={`space-y-2 overflow-y-auto pr-1 ${
-              isSleepLimitExceeded ? 'max-h-40' : 'max-h-56'
-            }`}
-          >
+          <div className="max-h-56 flex-1 space-y-2 overflow-y-auto pr-1">
             {logs.map((log) => {
               const logId = log.id || log._id || '';
               const nap = isNapSession(log);
