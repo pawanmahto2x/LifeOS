@@ -80,6 +80,43 @@ export function FocusTimer() {
     },
   });
 
+  const playCompletionSound = () => {
+    try {
+      const AudioCtxClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtxClass) return;
+      const audioCtx = new AudioCtxClass();
+      const now = audioCtx.currentTime;
+
+      // Note 1: E5 (659.25 Hz)
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(659.25, now);
+      gain1.gain.setValueAtTime(0.2, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.8);
+
+      // Note 2: G#5 (830.61 Hz)
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(830.61, now + 0.25);
+      gain2.gain.setValueAtTime(0.25, now + 0.25);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.start(now + 0.25);
+      osc2.stop(now + 1.2);
+    } catch {
+      // Audio playback silently ignored if blocked by browser autoplay policy
+    }
+  };
+
   // Countdown effect
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
@@ -88,6 +125,7 @@ export function FocusTimer() {
           if (prev <= 1) {
             clearInterval(timerRef.current!);
             setIsRunning(false);
+            playCompletionSound();
             setIsSummaryOpen(true);
             return 0;
           }
@@ -213,22 +251,46 @@ export function FocusTimer() {
         </button>
       </div>
 
-      {/* Custom Duration Slider if Custom mode */}
+      {/* Custom Duration Slider & Presets if Custom mode */}
       {mode === 'custom' && !isRunning && (
         <div className="mx-auto mb-6 max-w-sm text-center">
           <div className="text-muted-foreground mb-2 flex items-center justify-between text-xs">
-            <span>Duration</span>
-            <span className="text-foreground font-bold">{customMinutes} minutes</span>
+            <span>Select Duration</span>
+            <span className="text-primary font-bold">{customMinutes} minutes</span>
           </div>
+
+          <div className="mb-3 flex flex-wrap justify-center gap-1.5">
+            {[1, 15, 25, 30, 45, 60, 90].map((mins) => (
+              <button
+                key={mins}
+                type="button"
+                onClick={() => handleCustomMinutesChange(mins)}
+                className={`cursor-pointer rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                  customMinutes === mins
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'bg-muted/50 border-border text-muted-foreground hover:bg-muted hover:text-foreground border'
+                }`}
+              >
+                {mins === 1 ? '1m (Test)' : `${mins}m`}
+              </button>
+            ))}
+          </div>
+
           <input
             type="range"
-            min="5"
+            min="1"
             max="120"
-            step="5"
+            step="1"
             value={customMinutes}
             onChange={(e) => handleCustomMinutesChange(Number(e.target.value))}
             className="accent-primary w-full cursor-pointer"
           />
+          <div className="text-muted-foreground mt-1 flex justify-between text-[10px]">
+            <span>1 min</span>
+            <span>30 min</span>
+            <span>60 min</span>
+            <span>120 min</span>
+          </div>
         </div>
       )}
 

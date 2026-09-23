@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { focusApiService } from '../services/focus.service';
+import { taskApiService } from '@/features/tasks/services/task.service';
 import { FocusSession } from '@/types/focus.types';
-import { CheckCircle2, Flame, AlertCircle, X } from 'lucide-react';
+import { CheckCircle2, Flame, AlertCircle, X, CheckSquare } from 'lucide-react';
 
 interface FocusSummaryDialogProps {
   isOpen: boolean;
@@ -21,10 +22,18 @@ export function FocusSummaryDialog({
 }: FocusSummaryDialogProps) {
   const queryClient = useQueryClient();
   const [notes, setNotes] = useState('');
+  const [markTaskCompleted, setMarkTaskCompleted] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   if (!isOpen || !session) return null;
+
+  const attachedTaskId =
+    typeof session.taskId === 'object' && session.taskId !== null
+      ? session.taskId._id || session.taskId.id
+      : session.taskId;
+  const attachedTaskTitle =
+    typeof session.taskId === 'object' && session.taskId !== null ? session.taskId.title : null;
 
   const handleFinish = async (completed: boolean) => {
     try {
@@ -38,6 +47,16 @@ export function FocusSummaryDialog({
         notes: notes.trim() || undefined,
         completed,
       });
+
+      // If user chose to mark the attached task as complete
+      if (completed && markTaskCompleted && attachedTaskId) {
+        try {
+          await taskApiService.completeTask(attachedTaskId);
+          await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        } catch {
+          // Task might already be completed or deleted
+        }
+      }
 
       await queryClient.invalidateQueries({ queryKey: ['focus'] });
       await queryClient.invalidateQueries({ queryKey: ['focus-current'] });
@@ -93,6 +112,29 @@ export function FocusSummaryDialog({
             <p className="text-foreground text-xl font-bold">{distractions}</p>
           </div>
         </div>
+
+        {attachedTaskId && (
+          <label className="border-border/60 bg-muted/30 hover:bg-muted/50 mb-5 flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 transition-colors">
+            <input
+              type="checkbox"
+              checked={markTaskCompleted}
+              onChange={(e) => setMarkTaskCompleted(e.target.checked)}
+              className="accent-primary border-border h-4 w-4 rounded"
+            />
+            <div className="text-foreground flex items-center gap-1.5 text-xs">
+              <CheckSquare className="h-4 w-4 text-emerald-500" />
+              <span>
+                Mark attached task{' '}
+                {attachedTaskTitle ? (
+                  <strong className="text-primary font-semibold">
+                    &quot;{attachedTaskTitle}&quot;
+                  </strong>
+                ) : null}{' '}
+                as completed
+              </span>
+            </div>
+          </label>
+        )}
 
         <div className="mb-6">
           <label className="text-muted-foreground mb-2 block text-xs font-medium tracking-wider uppercase">

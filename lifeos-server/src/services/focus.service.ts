@@ -67,7 +67,7 @@ export class FocusService {
     const updateData: IUpdateFocusSessionDto = {
       endedAt: now,
       completed: data.completed !== undefined ? data.completed : true,
-      duration: Math.min(elapsedMinutes, data.completed ? session.duration : elapsedMinutes),
+      duration: data.completed ? session.duration : elapsedMinutes,
       distractions: data.distractions !== undefined ? data.distractions : session.distractions,
       notes: data.notes !== undefined ? data.notes : session.notes,
     };
