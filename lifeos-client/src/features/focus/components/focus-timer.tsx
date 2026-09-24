@@ -17,15 +17,20 @@ import {
   CheckSquare,
   ShieldAlert,
   X,
+  Monitor,
+  BookOpen,
+  Bell,
 } from 'lucide-react';
 
 type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak' | 'custom';
+type DisciplineProfile = 'strict' | 'software';
 
 export function FocusTimer() {
   const queryClient = useQueryClient();
 
   const [mode, setMode] = useState<TimerMode>('pomodoro');
   const [customMinutes, setCustomMinutes] = useState(45);
+  const [disciplineProfile, setDisciplineProfile] = useState<DisciplineProfile>('strict');
   const [selectedTaskId, setSelectedTaskId] = useState<string>('');
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
@@ -39,6 +44,7 @@ export function FocusTimer() {
   } | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const targetEndTimeRef = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const leftAtRef = useRef<number | null>(null);
   const originalTitleRef = useRef<string>('');
@@ -83,10 +89,38 @@ export function FocusTimer() {
     },
     onSuccess: (session) => {
       setActiveSession(session ?? null);
+      targetEndTimeRef.current = Date.now() + timeLeft * 1000;
       setIsRunning(true);
       queryClient.invalidateQueries({ queryKey: ['focus'] });
     },
   });
+
+  const requestNotificationPermission = () => {
+    if (
+      typeof window !== 'undefined' &&
+      'Notification' in window &&
+      Notification.permission === 'default'
+    ) {
+      Notification.requestPermission().catch(() => {});
+    }
+  };
+
+  const triggerDesktopNotification = () => {
+    if (
+      typeof window !== 'undefined' &&
+      'Notification' in window &&
+      Notification.permission === 'granted'
+    ) {
+      try {
+        new Notification('🎉 Focus Block Completed! • LifeOS', {
+          body: 'Awesome work! Your scheduled focus session has finished.',
+          icon: '/favicon.ico',
+        });
+      } catch {
+        // Silently catch if desktop notifications are unsupported or blocked
+      }
+    }
+  };
 
   const playCompletionSound = () => {
     try {
@@ -125,20 +159,29 @@ export function FocusTimer() {
     }
   };
 
-  // Countdown effect
+  // Countdown effect with wall-clock drift compensation (handles screen-off, background tabs & power save)
   useEffect(() => {
-    if (isRunning && timeLeft > 0) {
+    if (isRunning) {
+      if (!targetEndTimeRef.current) {
+        targetEndTimeRef.current = Date.now() + timeLeft * 1000;
+      }
+
       timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current!);
-            setIsRunning(false);
-            playCompletionSound();
-            setIsSummaryOpen(true);
-            return 0;
-          }
-          return prev - 1;
-        });
+        if (!targetEndTimeRef.current) return;
+        const now = Date.now();
+        const diff = Math.max(0, Math.ceil((targetEndTimeRef.current - now) / 1000));
+
+        if (diff <= 0) {
+          clearInterval(timerRef.current!);
+          setIsRunning(false);
+          targetEndTimeRef.current = null;
+          setTimeLeft(0);
+          playCompletionSound();
+          triggerDesktopNotification();
+          setIsSummaryOpen(true);
+        } else {
+          setTimeLeft(diff);
+        }
       }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -147,7 +190,7 @@ export function FocusTimer() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRunning, timeLeft]);
+  }, [isRunning]);
 
   // Capture original page title
   useEffect(() => {
@@ -170,37 +213,49 @@ export function FocusTimer() {
     const secs = timeLeft % 60;
     const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     if (!document.hidden) {
-      document.title = `(${formatted}) Focus Mode • LifeOS`;
+      document.title =
+        disciplineProfile === 'software'
+          ? `💻 (${formatted}) Deep Work • LifeOS`
+          : `(${formatted}) Focus Mode • LifeOS`;
     }
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
         // User switched away from LifeOS
         leftAtRef.current = Date.now();
-        document.title = '⚠️ Return to Focus! • LifeOS';
-        setDistractions((prev) => prev + 1);
+        if (disciplineProfile === 'strict') {
+          document.title = '⚠️ Return to Focus! • LifeOS';
+          setDistractions((prev) => prev + 1);
+        } else {
+          document.title = `💻 (${formatted}) Deep Work • LifeOS`;
+        }
       } else {
         // User returned to LifeOS tab
         if (leftAtRef.current) {
           const awaySeconds = Math.round((Date.now() - leftAtRef.current) / 1000);
           leftAtRef.current = null;
 
-          if (awaySeconds >= 60) {
-            // Away for 60 seconds or more: Reset timer back to start!
-            handleReset();
-            setFocusGuardAlert({
-              type: 'reset',
-              awaySeconds,
-            });
-          } else if (awaySeconds >= 2) {
-            // Away for under 60 seconds: Log as distraction
-            setFocusGuardAlert({
-              type: 'warning',
-              awaySeconds,
-            });
+          if (disciplineProfile === 'strict') {
+            if (awaySeconds >= 60) {
+              // Away for 60 seconds or more in strict mode: Reset timer back to start!
+              handleReset();
+              setFocusGuardAlert({
+                type: 'reset',
+                awaySeconds,
+              });
+            } else if (awaySeconds >= 2) {
+              // Away for under 60 seconds in strict mode: Log as distraction
+              setFocusGuardAlert({
+                type: 'warning',
+                awaySeconds,
+              });
+            }
           }
         }
-        document.title = `(${formatted}) Focus Mode • LifeOS`;
+        document.title =
+          disciplineProfile === 'software'
+            ? `💻 (${formatted}) Deep Work • LifeOS`
+            : `(${formatted}) Focus Mode • LifeOS`;
       }
     };
 
@@ -212,11 +267,12 @@ export function FocusTimer() {
         document.title = originalTitleRef.current;
       }
     };
-  }, [isRunning, timeLeft, mode, customMinutes]);
+  }, [isRunning, timeLeft, disciplineProfile]);
 
   const handleModeChange = (newMode: TimerMode) => {
     if (isRunning) return;
     setMode(newMode);
+    targetEndTimeRef.current = null;
     setTimeLeft(getTargetDurationSeconds(newMode, customMinutes));
   };
 
@@ -224,11 +280,14 @@ export function FocusTimer() {
     if (isRunning) return;
     setCustomMinutes(mins);
     if (mode === 'custom') {
+      targetEndTimeRef.current = null;
       setTimeLeft(mins * 60);
     }
   };
 
   const handleStart = () => {
+    requestNotificationPermission();
+    targetEndTimeRef.current = Date.now() + timeLeft * 1000;
     if (!activeSession && mode !== 'shortBreak' && mode !== 'longBreak') {
       startMutation.mutate();
     } else {
@@ -238,10 +297,12 @@ export function FocusTimer() {
 
   const handlePause = () => {
     setIsRunning(false);
+    targetEndTimeRef.current = null;
   };
 
   const handleStop = () => {
     setIsRunning(false);
+    targetEndTimeRef.current = null;
     if (activeSession) {
       setIsSummaryOpen(true);
     } else {
@@ -251,6 +312,7 @@ export function FocusTimer() {
 
   const handleReset = () => {
     setIsRunning(false);
+    targetEndTimeRef.current = null;
     setActiveSession(null);
     setDistractions(0);
     setTimeLeft(getTargetDurationSeconds(mode, customMinutes));
@@ -403,6 +465,43 @@ export function FocusTimer() {
           </div>
         </div>
       )}
+
+      {/* Discipline Profile Switcher (Strict Study vs Software/Editing) */}
+      <div className="mx-auto mb-4 max-w-sm text-center">
+        <div className="bg-muted/40 border-border/60 inline-flex items-center rounded-xl border p-1 shadow-2xs">
+          <button
+            type="button"
+            disabled={isRunning}
+            onClick={() => setDisciplineProfile('strict')}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
+              disciplineProfile === 'strict'
+                ? 'bg-background text-foreground shadow-2xs'
+                : 'text-muted-foreground hover:text-foreground'
+            } ${isRunning ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            <span>Strict Study Guard</span>
+          </button>
+          <button
+            type="button"
+            disabled={isRunning}
+            onClick={() => setDisciplineProfile('software')}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
+              disciplineProfile === 'software'
+                ? 'bg-background text-foreground shadow-2xs'
+                : 'text-muted-foreground hover:text-foreground'
+            } ${isRunning ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+          >
+            <Monitor className="h-3.5 w-3.5" />
+            <span>Software / Creative Flow</span>
+          </button>
+        </div>
+        <p className="text-muted-foreground mt-1 text-[11px]">
+          {disciplineProfile === 'strict'
+            ? '🛡️ Strict: Leaving tab counts as distraction; > 1 min away resets timer.'
+            : '💻 Creative Flow: Edit in CapCut, Premiere, VS Code! No false penalties & alerts when done.'}
+        </p>
+      </div>
 
       {/* Circular Timer Display */}
       <div className="relative my-4 flex flex-col items-center justify-center">
