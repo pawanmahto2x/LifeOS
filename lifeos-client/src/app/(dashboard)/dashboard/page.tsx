@@ -10,6 +10,7 @@ import { healthApiService } from '@/features/health/services/health.service';
 import { focusApiService } from '@/features/focus/services/focus.service';
 import { dailyMissionApiService } from '@/features/daily-mission/services/daily-mission.service';
 import { insightsApiService } from '@/features/insights/services/insights.service';
+import { goalService } from '@/features/goals/services/goal.service';
 import {
   CheckSquare,
   Repeat,
@@ -116,6 +117,18 @@ export default function DashboardPage() {
     },
   });
 
+  const { data: goalsData, isLoading: isGoalsLoading } = useQuery({
+    queryKey: ['goals', 'dashboard-preview'],
+    queryFn: async () => {
+      try {
+        const res = await goalService.getAll();
+        return res?.data || [];
+      } catch (err) {
+        return [];
+      }
+    },
+  });
+
   const generateMissionMutation = useMutation({
     mutationFn: async () => {
       try {
@@ -139,6 +152,13 @@ export default function DashboardPage() {
   const pendingCount = tasks.filter((t: any) => t.status === 'Pending').length;
   const bestStreak = habits.reduce((max: number, h: any) => Math.max(max, h.currentStreak), 0);
   const todayFocusMinutes = focus?.todayFocusMinutes ?? 0;
+
+  const allGoals = Array.isArray(goalsData) ? goalsData : [];
+  const activeGoals = allGoals.filter((g: any) => g.status === 'active' || !g.status);
+  const topActiveGoal = activeGoals[0] || allGoals[0] || null;
+  const nextMilestone = topActiveGoal?.milestones?.find(
+    (m: any) => !(m.completed ?? m.isCompleted),
+  );
 
   const priorityWeight: Record<string, number> = {
     Urgent: 4,
@@ -180,6 +200,13 @@ export default function DashboardPage() {
 
         <div className="flex items-center space-x-2.5">
           <Link
+            href="/goals"
+            className="border-border/80 bg-muted/60 text-foreground hover:bg-muted inline-flex items-center space-x-2 rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all active:scale-[0.98]"
+          >
+            <Target className="text-primary h-4 w-4" />
+            <span>Goals</span>
+          </Link>
+          <Link
             href="/tasks"
             className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center space-x-2 rounded-xl px-3.5 py-2 text-xs font-semibold shadow-xs transition-all active:scale-[0.98]"
           >
@@ -203,85 +230,203 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 2. Today's Mission Card */}
-      <div className="border-border/80 bg-card hover:border-primary/40 rounded-2xl border p-6 shadow-2xs transition-all duration-200">
-        <div className="mb-4 flex items-center space-x-2">
-          <Target className="text-primary h-5 w-5" />
-          <span className="text-foreground text-sm font-bold tracking-tight">
-            Today&apos;s Mission
-          </span>
+      {/* 2. Strategic Goal & Daily Mission Section */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Today's Mission Card */}
+        <div className="border-border/80 bg-card hover:border-primary/40 flex flex-col justify-between rounded-2xl border p-6 shadow-2xs transition-all duration-200">
+          <div>
+            <div className="mb-4 flex items-center space-x-2">
+              <Compass className="text-primary h-5 w-5" />
+              <span className="text-foreground text-sm font-bold tracking-tight">
+                Today&apos;s Mission
+              </span>
+            </div>
+
+            {isMissionLoading ? (
+              <div className="text-muted-foreground py-4 text-center text-sm">
+                Loading mission...
+              </div>
+            ) : missionData ? (
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  {missionData.dayType && (
+                    <span className="border-border/80 bg-muted text-muted-foreground rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase">
+                      {missionData.dayType}
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-foreground text-xl font-bold tracking-tight">
+                  {missionData.primaryMission?.title || 'Your Mission for Today'}
+                </h3>
+                {missionData.supportingGoals && (
+                  <p className="text-muted-foreground text-xs">
+                    {missionData.supportingGoals.filter((g: any) => g.completed).length} /{' '}
+                    {missionData.supportingGoals.length} supporting goals completed
+                  </p>
+                )}
+                <div className="flex items-center justify-between pt-2">
+                  <Link
+                    href="/daily-mission"
+                    className="text-primary inline-flex items-center text-xs font-medium hover:underline"
+                  >
+                    View Full Plan <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                  </Link>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await fetch('/api/v1/daily-mission/' + missionData._id, {
+                          method: 'DELETE',
+                          headers: {
+                            Authorization: `Bearer ${
+                              localStorage.getItem('auth-storage')
+                                ? JSON.parse(localStorage.getItem('auth-storage') as string).state
+                                    ?.token
+                                : ''
+                            }`,
+                          },
+                        });
+                        window.location.reload();
+                      } catch (e) {}
+                    }}
+                    className="text-muted-foreground hover:text-destructive text-xs underline"
+                  >
+                    Reject Plan
+                  </button>
+                </div>
+                <p className="text-muted-foreground border-border/50 mt-2 border-t pt-2 text-[10px] italic">
+                  Highlights your highest priorities for today based on existing tasks and habits.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center space-y-4 py-6 text-center">
+                <div className="bg-primary/10 text-primary rounded-full p-3">
+                  <Compass className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-foreground text-sm font-bold">No plan generated yet</p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    Let LifeOS highlight your focus areas for today
+                  </p>
+                </div>
+                <button
+                  onClick={() => generateMissionMutation.mutate()}
+                  disabled={generateMissionMutation.isPending}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-4 py-2 text-xs font-semibold transition-all disabled:opacity-50"
+                >
+                  {generateMissionMutation.isPending ? 'Generating...' : "Generate Today's Plan"}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        {isMissionLoading ? (
-          <div className="text-muted-foreground py-4 text-center text-sm">Loading mission...</div>
-        ) : missionData ? (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              {missionData.dayType && (
-                <span className="border-border/80 bg-muted text-muted-foreground rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase">
-                  {missionData.dayType}
+        {/* Active Strategic Goal & Next Milestone Card */}
+        <div className="border-border/80 bg-card hover:border-primary/40 flex flex-col justify-between rounded-2xl border p-6 shadow-2xs transition-all duration-200">
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Target className="h-5 w-5 text-indigo-500" />
+                <span className="text-foreground text-sm font-bold tracking-tight">
+                  Active Strategic Goal
                 </span>
-              )}
-            </div>
-            <h3 className="text-foreground text-2xl font-bold tracking-tight">
-              {missionData.primaryMission?.title || 'Your Mission for Today'}
-            </h3>
-            {missionData.supportingGoals && (
-              <p className="text-muted-foreground text-sm">
-                {missionData.supportingGoals.filter((g: any) => g.completed).length} /{' '}
-                {missionData.supportingGoals.length} supporting goals completed
-              </p>
-            )}
-            <div className="flex items-center justify-between pt-2">
-              <Link
-                href="/daily-mission"
-                className="text-primary inline-flex items-center text-sm font-medium hover:underline"
-              >
-                View Full Plan <ArrowRight className="ml-1 h-4 w-4" />
+              </div>
+              <Link href="/goals" className="text-primary text-xs font-medium hover:underline">
+                All Goals
               </Link>
-              <button
-                onClick={async () => {
-                  try {
-                    // Quick optimistic local delete
-                    await fetch('/api/v1/daily-mission/' + missionData._id, {
-                      method: 'DELETE',
-                      headers: {
-                        Authorization: `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage') as string).state?.token : ''}`,
-                      },
-                    });
-                    window.location.reload();
-                  } catch (e) {}
-                }}
-                className="text-muted-foreground hover:text-destructive text-xs underline"
-              >
-                Reject Plan
-              </button>
             </div>
-            <p className="text-muted-foreground border-border/50 mt-2 border-t pt-2 text-[10px] italic">
-              Note: This plan does not create new tasks. It simply highlights your highest
-              priorities for today based on your existing tasks and habits.
-            </p>
+
+            {isGoalsLoading ? (
+              <div className="text-muted-foreground py-6 text-center text-sm">Loading goal...</div>
+            ) : topActiveGoal ? (
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="border-border/80 bg-muted text-muted-foreground rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase">
+                    {topActiveGoal.category || 'Strategic'}
+                  </span>
+                  <span className="text-foreground text-xs font-bold">
+                    {topActiveGoal.progress}% completed
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-foreground line-clamp-1 text-xl font-bold tracking-tight">
+                    {topActiveGoal.title}
+                  </h3>
+                  {topActiveGoal.description && (
+                    <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">
+                      {topActiveGoal.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-1">
+                  <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
+                    <div
+                      className="bg-primary h-full transition-all duration-500"
+                      style={{ width: `${topActiveGoal.progress}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Current Milestone */}
+                {nextMilestone ? (
+                  <div className="bg-muted/40 border-border/60 rounded-xl border p-3">
+                    <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
+                      Current Milestone
+                    </span>
+                    <p className="text-foreground mt-1 flex items-center gap-2 text-xs font-medium">
+                      <span className="bg-primary h-2 w-2 shrink-0 animate-pulse rounded-full" />
+                      <span className="line-clamp-1">{nextMilestone.title}</span>
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    All milestones completed! Ready to finalize goal.
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-1">
+                  <Link
+                    href={`/goals/${topActiveGoal._id}`}
+                    className="text-primary inline-flex items-center text-xs font-semibold hover:underline"
+                  >
+                    View Goal & Roadmap <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                  </Link>
+                  {topActiveGoal.deadline && (
+                    <span className="text-muted-foreground text-[11px]">
+                      Due{' '}
+                      {new Date(topActiveGoal.deadline).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center space-y-3 py-6 text-center">
+                <div className="rounded-full bg-indigo-500/10 p-3 text-indigo-500">
+                  <Target className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-foreground text-sm font-bold">No active strategic goals</p>
+                  <p className="text-muted-foreground mt-1 max-w-xs text-xs">
+                    Define your north star. Create a goal and let AI propose milestones, tasks, and
+                    habits.
+                  </p>
+                </div>
+                <Link
+                  href="/goals"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-4 py-2 text-xs font-semibold shadow-xs transition-all"
+                >
+                  Create Goal
+                </Link>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center space-y-4 py-6 text-center">
-            <div className="bg-primary/10 text-primary rounded-full p-3">
-              <Compass className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-foreground text-sm font-bold">No plan generated yet</p>
-              <p className="text-muted-foreground mt-1 text-xs">
-                Let LifeOS create your personalized day plan
-              </p>
-            </div>
-            <button
-              onClick={() => generateMissionMutation.mutate()}
-              disabled={generateMissionMutation.isPending}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-4 py-2 text-xs font-semibold transition-all disabled:opacity-50"
-            >
-              {generateMissionMutation.isPending ? 'Generating...' : "Generate Today's Plan"}
-            </button>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* 3. Progress Cards */}
