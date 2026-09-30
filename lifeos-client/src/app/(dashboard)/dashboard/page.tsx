@@ -98,7 +98,8 @@ export default function DashboardPage() {
     queryFn: async () => {
       try {
         const res = await insightsApiService.getPatterns();
-        return res?.data || [];
+        const data = res?.data as any;
+        return Array.isArray(data) ? data : data?.patterns || [];
       } catch (err) {
         return [];
       }
@@ -110,7 +111,8 @@ export default function DashboardPage() {
     queryFn: async () => {
       try {
         const res = await insightsApiService.getTrends();
-        return res?.data || [];
+        const data = res?.data as any;
+        return Array.isArray(data) ? data : data?.trends || [];
       } catch (err) {
         return [];
       }
@@ -122,7 +124,8 @@ export default function DashboardPage() {
     queryFn: async () => {
       try {
         const res = await goalService.getAll();
-        return res?.data || [];
+        const data = res?.data as any;
+        return Array.isArray(data) ? data : data?.goals || [];
       } catch (err) {
         return [];
       }
@@ -184,8 +187,13 @@ export default function DashboardPage() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
 
-  const firstPattern = patternsData?.[0];
-  const topTrends = trendsData?.slice(0, 3) || [];
+  const patternsList = Array.isArray(patternsData)
+    ? patternsData
+    : (patternsData as any)?.patterns || [];
+  const trendsList = Array.isArray(trendsData) ? trendsData : (trendsData as any)?.trends || [];
+
+  const firstPattern = patternsList[0];
+  const topTrends = trendsList.slice(0, 3);
 
   return (
     <div className="animate-in fade-in space-y-8 duration-300">

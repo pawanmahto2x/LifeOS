@@ -16,7 +16,7 @@ export class InsightsController {
       if (!req.user) throw new UnauthorizedError();
       const period = (req.query.period as BaselinePeriod) || '7d';
       const baseline = await this.repo.findBaseline(req.user.userId, period);
-      sendSuccess(res, { baseline }, 'Baseline retrieved successfully.');
+      sendSuccess(res, baseline, 'Baseline retrieved successfully.');
     } catch (error) {
       next(error);
     }
@@ -37,7 +37,7 @@ export class InsightsController {
     try {
       if (!req.user) throw new UnauthorizedError();
       const patterns = await this.repo.findActiveInsights(req.user.userId);
-      sendSuccess(res, { patterns }, 'Patterns retrieved successfully.');
+      sendSuccess(res, patterns, 'Patterns retrieved successfully.');
     } catch (error) {
       next(error);
     }
@@ -47,7 +47,7 @@ export class InsightsController {
     try {
       if (!req.user) throw new UnauthorizedError();
       const trends = await this.service.detectTrends(req.user.userId);
-      sendSuccess(res, { trends }, 'Trends retrieved successfully.');
+      sendSuccess(res, trends, 'Trends retrieved successfully.');
     } catch (error) {
       next(error);
     }
@@ -57,7 +57,7 @@ export class InsightsController {
     try {
       if (!req.user) throw new UnauthorizedError();
       const areas = await this.service.getAttentionAreas(req.user.userId);
-      sendSuccess(res, { attentionAreas: areas }, 'Attention areas retrieved successfully.');
+      sendSuccess(res, areas, 'Attention areas retrieved successfully.');
     } catch (error) {
       next(error);
     }
