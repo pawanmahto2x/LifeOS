@@ -15,6 +15,13 @@ import challengeRoutes from './challenge.routes';
 import aiRoutes from './ai.routes';
 import achievementRoutes from './achievement.routes';
 import timelineRoutes from './timeline.routes';
+import insightsRoutes from './insights.routes';
+import dailyMissionRoutes from './daily-mission.routes';
+import journalAnalysisRoutes from './journal-analysis.routes';
+import lifeReplayRoutes from './life-replay.routes';
+import healthExpansionRoutes from './health-expansion.routes';
+import digitalWellbeingRoutes from './digital-wellbeing.routes';
+import goalRoutes from './goal.routes';
 
 const router = Router();
 
@@ -34,5 +41,12 @@ router.use('/challenges', challengeRoutes);
 router.use('/ai', aiRoutes);
 router.use('/achievements', achievementRoutes);
 router.use('/life-timeline', timelineRoutes);
+router.use('/insights', insightsRoutes);
+router.use('/daily-mission', dailyMissionRoutes);
+router.use('/journal-analysis', journalAnalysisRoutes);
+router.use('/life-replay', lifeReplayRoutes);
+router.use('/health/expansion', healthExpansionRoutes);
+router.use('/digital-wellbeing', digitalWellbeingRoutes);
+router.use('/goals', goalRoutes);
 
 export default router;

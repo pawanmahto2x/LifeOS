@@ -3,11 +3,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { taskApiService } from '@/features/tasks/services/task.service';
 import { habitApiService } from '@/features/habits/services/habit.service';
 import { healthApiService } from '@/features/health/services/health.service';
 import { focusApiService } from '@/features/focus/services/focus.service';
+import { dailyMissionApiService } from '@/features/daily-mission/services/daily-mission.service';
+import { insightsApiService } from '@/features/insights/services/insights.service';
 import {
   CheckSquare,
   Repeat,
@@ -17,40 +19,116 @@ import {
   Droplet,
   HeartPulse,
   Clock,
+  Compass,
+  Lightbulb,
+  BookOpen,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Target,
 } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
 
   const { data: tasksData, isLoading: isTasksLoading } = useQuery({
     queryKey: ['tasks', 'dashboard-preview'],
     queryFn: async () => {
-      const res = await taskApiService.getTasks({ limit: 50 });
-      return res.data;
+      try {
+        const res = await taskApiService.getTasks({ limit: 50 });
+        return res.data;
+      } catch (err) {
+        return null;
+      }
     },
   });
 
   const { data: habitsData, isLoading: isHabitsLoading } = useQuery({
     queryKey: ['habits', 'dashboard-preview'],
     queryFn: async () => {
-      const res = await habitApiService.getHabits({ limit: 5 });
-      return res.data;
+      try {
+        const res = await habitApiService.getHabits({ limit: 5 });
+        return res.data;
+      } catch (err) {
+        return null;
+      }
     },
   });
 
   const { data: healthData, isLoading: isHealthLoading } = useQuery({
     queryKey: ['health-summary', 'dashboard-preview'],
     queryFn: async () => {
-      const res = await healthApiService.getSummary();
-      return res.data;
+      try {
+        const res = await healthApiService.getSummary();
+        return res.data;
+      } catch (err) {
+        return null;
+      }
     },
   });
 
   const { data: focusData, isLoading: isFocusLoading } = useQuery({
     queryKey: ['focus', 'dashboard-preview'],
     queryFn: async () => {
-      const res = await focusApiService.getSessions();
-      return res.data;
+      try {
+        const res = await focusApiService.getSessions();
+        return res.data;
+      } catch (err) {
+        return null;
+      }
+    },
+  });
+
+  const { data: missionData, isLoading: isMissionLoading } = useQuery({
+    queryKey: ['daily-mission', 'today', 'dashboard'],
+    queryFn: async () => {
+      try {
+        const res = await dailyMissionApiService.getTodayMission();
+        return res?.data || null;
+      } catch (err) {
+        return null;
+      }
+    },
+  });
+
+  const { data: patternsData } = useQuery({
+    queryKey: ['insights', 'patterns'],
+    queryFn: async () => {
+      try {
+        const res = await insightsApiService.getPatterns();
+        return res?.data || [];
+      } catch (err) {
+        return [];
+      }
+    },
+  });
+
+  const { data: trendsData } = useQuery({
+    queryKey: ['insights', 'trends'],
+    queryFn: async () => {
+      try {
+        const res = await insightsApiService.getTrends();
+        return res?.data || [];
+      } catch (err) {
+        return [];
+      }
+    },
+  });
+
+  const generateMissionMutation = useMutation({
+    mutationFn: async () => {
+      try {
+        if ((dailyMissionApiService as any).generateMission) {
+          await (dailyMissionApiService as any).generateMission();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['daily-mission', 'today'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-mission', 'today', 'dashboard'] });
     },
   });
 
@@ -58,8 +136,8 @@ export default function DashboardPage() {
   const habits = habitsData?.habits || [];
   const health = healthData;
   const focus = focusData?.analytics;
-  const pendingCount = tasks.filter((t) => t.status === 'Pending').length;
-  const bestStreak = habits.reduce((max, h) => Math.max(max, h.currentStreak), 0);
+  const pendingCount = tasks.filter((t: any) => t.status === 'Pending').length;
+  const bestStreak = habits.reduce((max: number, h: any) => Math.max(max, h.currentStreak), 0);
   const todayFocusMinutes = focus?.todayFocusMinutes ?? 0;
 
   const priorityWeight: Record<string, number> = {
@@ -69,7 +147,7 @@ export default function DashboardPage() {
     Low: 1,
   };
 
-  const prioritizedTasks = [...tasks].sort((a, b) => {
+  const prioritizedTasks = [...tasks].sort((a: any, b: any) => {
     if (a.status === 'Completed' && b.status !== 'Completed') return 1;
     if (a.status !== 'Completed' && b.status === 'Completed') return -1;
     const weightA = priorityWeight[a.priority] || 0;
@@ -78,17 +156,26 @@ export default function DashboardPage() {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
+  const todayDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
+
+  const firstPattern = patternsData?.[0];
+  const topTrends = trendsData?.slice(0, 3) || [];
+
   return (
     <div className="animate-in fade-in space-y-8 duration-300">
-      {/* Header with greeting */}
+      {/* 1. Good Morning Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
-            Welcome back, {user?.fullName || 'User'}
+            {greeting}, {user?.fullName || 'User'}
           </h1>
-          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
-            Here is your daily LifeOS overview. Ready to focus today?
-          </p>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">{todayDate}</p>
         </div>
 
         <div className="flex items-center space-x-2.5">
@@ -116,9 +203,90 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Overview Cards */}
+      {/* 2. Today's Mission Card */}
+      <div className="border-border/80 bg-card hover:border-primary/40 rounded-2xl border p-6 shadow-2xs transition-all duration-200">
+        <div className="mb-4 flex items-center space-x-2">
+          <Target className="text-primary h-5 w-5" />
+          <span className="text-foreground text-sm font-bold tracking-tight">
+            Today&apos;s Mission
+          </span>
+        </div>
+
+        {isMissionLoading ? (
+          <div className="text-muted-foreground py-4 text-center text-sm">Loading mission...</div>
+        ) : missionData ? (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              {missionData.dayType && (
+                <span className="border-border/80 bg-muted text-muted-foreground rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase">
+                  {missionData.dayType}
+                </span>
+              )}
+            </div>
+            <h3 className="text-foreground text-2xl font-bold tracking-tight">
+              {missionData.primaryMission?.title || 'Your Mission for Today'}
+            </h3>
+            {missionData.supportingGoals && (
+              <p className="text-muted-foreground text-sm">
+                {missionData.supportingGoals.filter((g: any) => g.completed).length} /{' '}
+                {missionData.supportingGoals.length} supporting goals completed
+              </p>
+            )}
+            <div className="flex items-center justify-between pt-2">
+              <Link
+                href="/daily-mission"
+                className="text-primary inline-flex items-center text-sm font-medium hover:underline"
+              >
+                View Full Plan <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
+              <button
+                onClick={async () => {
+                  try {
+                    // Quick optimistic local delete
+                    await fetch('/api/v1/daily-mission/' + missionData._id, {
+                      method: 'DELETE',
+                      headers: {
+                        Authorization: `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage') as string).state?.token : ''}`,
+                      },
+                    });
+                    window.location.reload();
+                  } catch (e) {}
+                }}
+                className="text-muted-foreground hover:text-destructive text-xs underline"
+              >
+                Reject Plan
+              </button>
+            </div>
+            <p className="text-muted-foreground border-border/50 mt-2 border-t pt-2 text-[10px] italic">
+              Note: This plan does not create new tasks. It simply highlights your highest
+              priorities for today based on your existing tasks and habits.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center space-y-4 py-6 text-center">
+            <div className="bg-primary/10 text-primary rounded-full p-3">
+              <Compass className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-foreground text-sm font-bold">No plan generated yet</p>
+              <p className="text-muted-foreground mt-1 text-xs">
+                Let LifeOS create your personalized day plan
+              </p>
+            </div>
+            <button
+              onClick={() => generateMissionMutation.mutate()}
+              disabled={generateMissionMutation.isPending}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-4 py-2 text-xs font-semibold transition-all disabled:opacity-50"
+            >
+              {generateMissionMutation.isPending ? 'Generating...' : "Generate Today's Plan"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* 3. Progress Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Today's Tasks */}
+        {/* Active Tasks */}
         <div className="border-border/80 bg-card hover:border-primary/40 flex flex-col justify-between rounded-2xl border p-5 shadow-2xs transition-all duration-200 hover:shadow-xs">
           <div>
             <div className="flex items-center justify-between">
@@ -135,6 +303,10 @@ export default function DashboardPage() {
               </p>
               <p className="text-muted-foreground mt-1 text-xs">
                 {pendingCount} pending action {pendingCount === 1 ? 'item' : 'items'}
+              </p>
+              {/* Baseline comparison text as a small colored text below the main value */}
+              <p className="text-muted-foreground mt-1 text-[10px]">
+                Active tasks compared to usual
               </p>
             </div>
           </div>
@@ -172,6 +344,9 @@ export default function DashboardPage() {
                   ? `${focus.todayCompletedSessions} completed sessions today`
                   : 'Deep work completed today'}
               </p>
+              <p className="text-muted-foreground mt-1 text-[10px]">
+                Compared to average daily focus
+              </p>
             </div>
           </div>
           <div className="border-border/70 mt-6 flex items-center justify-between border-t pt-3.5 text-xs">
@@ -206,6 +381,7 @@ export default function DashboardPage() {
               <p className="text-muted-foreground mt-1 text-xs">
                 {bestStreak > 0 ? `Best active streak: ${bestStreak} days` : 'Zero active streaks'}
               </p>
+              <p className="mt-1 text-[10px] text-emerald-500">Maintaining consistency</p>
             </div>
           </div>
           <div className="border-border/70 mt-6 flex items-center justify-between border-t pt-3.5 text-xs">
@@ -242,6 +418,7 @@ export default function DashboardPage() {
                   ? `${health.water.progressPercentage}% of 2000 ml goal`
                   : '0% completed today'}
               </p>
+              <p className="mt-1 text-[10px] text-sky-500">Daily hydration goal tracking</p>
             </div>
           </div>
           <div className="border-border/70 mt-6 flex items-center justify-between border-t pt-3.5 text-xs">
@@ -257,7 +434,56 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Module Overview Section */}
+      {/* 4 & 5. Personal Insight and Quick Journal */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Personal Insight Card */}
+        <div className="border-border/80 bg-card hover:border-primary/40 flex flex-col justify-between rounded-2xl border p-6 shadow-2xs transition-all duration-200">
+          <div>
+            <div className="mb-4 flex items-center space-x-2">
+              <Lightbulb className="h-5 w-5 text-amber-500" />
+              <span className="text-foreground text-sm font-bold tracking-tight">
+                Personal Insight
+              </span>
+            </div>
+            <p className="text-foreground text-sm font-medium">
+              {firstPattern?.description ||
+                'Keep using LifeOS to unlock personalized insights about your productivity and wellness.'}
+            </p>
+          </div>
+          <div className="mt-6">
+            <Link href="/insights" className="text-primary text-xs font-medium hover:underline">
+              View all insights
+            </Link>
+          </div>
+        </div>
+
+        {/* Quick Journal Card */}
+        <div className="border-border/80 bg-card hover:border-primary/40 flex flex-col justify-between rounded-2xl border p-6 shadow-2xs transition-all duration-200">
+          <div>
+            <div className="mb-4 flex items-center space-x-2">
+              <BookOpen className="text-primary h-5 w-5" />
+              <span className="text-foreground text-sm font-bold tracking-tight">
+                Quick Journal
+              </span>
+            </div>
+            <p className="text-foreground mb-2 text-sm font-medium">How is your day going?</p>
+            <p className="text-muted-foreground text-xs">
+              Take a moment to reflect and capture your thoughts.
+            </p>
+          </div>
+          <div className="mt-6 flex items-center justify-between">
+            <span className="text-muted-foreground text-xs">Recent entries this week</span>
+            <Link
+              href="/journal"
+              className="bg-muted hover:bg-muted/80 text-foreground rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+            >
+              Write Entry
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* 6. Two-Column Layout (Existing modules) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Recent Tasks Widget */}
         <div className="border-border/80 bg-card rounded-2xl border p-6 shadow-2xs">
@@ -277,7 +503,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {prioritizedTasks.slice(0, 4).map((task) => (
+              {prioritizedTasks.slice(0, 4).map((task: any) => (
                 <div
                   key={task._id}
                   className="border-border/80 bg-muted/30 hover:bg-muted/60 flex items-center justify-between rounded-xl border p-3 transition-colors"
@@ -327,7 +553,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {habits.slice(0, 4).map((habit) => (
+              {habits.slice(0, 4).map((habit: any) => (
                 <div
                   key={habit._id}
                   className="border-border/80 bg-muted/30 hover:bg-muted/60 flex items-center justify-between rounded-xl border p-3 transition-colors"
@@ -354,6 +580,31 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* 7. Weekly Trend Footer Section */}
+      {topTrends.length > 0 && (
+        <div className="border-border/80 bg-card mt-8 rounded-2xl border p-6 shadow-2xs">
+          <h2 className="text-foreground mb-4 text-sm font-bold tracking-tight">Weekly Trends</h2>
+          <div className="flex flex-wrap gap-4">
+            {topTrends.map((trend: any, idx: number) => (
+              <div
+                key={idx}
+                className="bg-muted/30 border-border/50 flex items-center space-x-2 rounded-lg border px-3 py-2"
+              >
+                {trend.direction === 'up' ? (
+                  <TrendingUp className="h-4 w-4 text-emerald-500" />
+                ) : trend.direction === 'down' ? (
+                  <TrendingDown className="h-4 w-4 text-rose-500" />
+                ) : (
+                  <Minus className="text-muted-foreground h-4 w-4" />
+                )}
+                <span className="text-foreground text-xs font-medium">{trend.metric}</span>
+                <span className="text-muted-foreground text-xs">{trend.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

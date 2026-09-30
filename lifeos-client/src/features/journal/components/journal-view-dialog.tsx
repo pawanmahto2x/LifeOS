@@ -1,17 +1,32 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { IJournal } from '@/types/journal.types';
-import { Calendar, Tag, Edit2, X, Smile } from 'lucide-react';
+import { Calendar, Tag, Edit2, X, Smile, Sparkles, BookOpen } from 'lucide-react';
+import { JournalAnalysis } from './JournalAnalysis';
 
 interface JournalViewDialogProps {
   journal: IJournal | null;
   isOpen: boolean;
   onClose: () => void;
   onEdit: (journal: IJournal) => void;
+  initialTab?: 'entry' | 'analysis';
 }
 
-export function JournalViewDialog({ journal, isOpen, onClose, onEdit }: JournalViewDialogProps) {
+export function JournalViewDialog({
+  journal,
+  isOpen,
+  onClose,
+  onEdit,
+  initialTab = 'entry',
+}: JournalViewDialogProps) {
+  const [activeTab, setActiveTab] = useState<'entry' | 'analysis'>(initialTab);
+
+  // Sync initial tab when journal changes
+  React.useEffect(() => {
+    setActiveTab(initialTab);
+  }, [journal?._id, initialTab]);
+
   if (!isOpen || !journal) return null;
 
   const formattedDate = new Date(journal.createdAt).toLocaleDateString(undefined, {
@@ -37,8 +52,8 @@ export function JournalViewDialog({ journal, isOpen, onClose, onEdit }: JournalV
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="border-border/80 bg-card text-card-foreground relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl border p-6 shadow-2xl transition-all sm:p-8">
+    <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
+      <div className="border-border/80 bg-card text-card-foreground relative max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-3xl border p-6 shadow-2xl transition-all sm:p-8">
         {/* Top Header Bar */}
         <div className="border-border/60 flex items-center justify-between border-b pb-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -84,30 +99,81 @@ export function JournalViewDialog({ journal, isOpen, onClose, onEdit }: JournalV
           </div>
         </div>
 
-        {/* Title */}
-        <div className="mt-5">
-          <h1 className="text-foreground text-xl font-bold tracking-tight sm:text-2xl">
-            {journal.title}
-          </h1>
+        {/* Tab Switcher */}
+        <div className="bg-muted/50 border-border/40 mt-4 flex items-center gap-1.5 rounded-xl border p-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('entry')}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition-all ${
+              activeTab === 'entry'
+                ? 'bg-background text-foreground shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            <span>Journal Reflection</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('analysis')}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition-all ${
+              activeTab === 'analysis'
+                ? 'bg-background text-foreground shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Sparkles className="text-primary h-3.5 w-3.5" />
+            <span>AI Behaviour Analysis</span>
+          </button>
         </div>
 
-        {/* Journal Reflection Content Body */}
-        <div className="text-foreground/90 mt-4 text-sm leading-relaxed font-normal whitespace-pre-wrap">
-          {journal.content}
-        </div>
+        {activeTab === 'entry' ? (
+          <div className="animate-in fade-in mt-6 space-y-5 duration-200">
+            {/* Title */}
+            <div>
+              <h1 className="text-foreground text-xl font-bold tracking-tight sm:text-2xl">
+                {journal.title}
+              </h1>
+            </div>
 
-        {/* Tags footer */}
-        {journal.tags && journal.tags.length > 0 && (
-          <div className="border-border/60 mt-6 flex flex-wrap items-center gap-1.5 border-t pt-4">
-            <Tag className="text-muted-foreground mr-1 h-3.5 w-3.5" />
-            {journal.tags.map((tag) => (
-              <span
-                key={tag}
-                className="bg-muted text-muted-foreground rounded-lg px-2.5 py-1 text-xs font-medium"
-              >
-                #{tag}
+            {/* Journal Reflection Content Body */}
+            <div className="text-foreground/90 text-sm leading-relaxed font-normal whitespace-pre-wrap">
+              {journal.content}
+            </div>
+
+            {/* Tags footer */}
+            {journal.tags && journal.tags.length > 0 && (
+              <div className="border-border/60 flex flex-wrap items-center gap-1.5 border-t pt-4">
+                <Tag className="text-muted-foreground mr-1 h-3.5 w-3.5" />
+                {journal.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="bg-muted text-muted-foreground rounded-lg px-2.5 py-1 text-xs font-medium"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Bottom prompt to explore analysis */}
+            <div className="border-border/60 flex items-center justify-between border-t pt-4">
+              <span className="text-muted-foreground text-xs">
+                Want to see patterns and data connections from this reflection?
               </span>
-            ))}
+              <button
+                type="button"
+                onClick={() => setActiveTab('analysis')}
+                className="bg-primary/10 text-primary hover:bg-primary/20 flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-colors"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>View Analysis →</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="animate-in fade-in mt-6 duration-200">
+            <JournalAnalysis journalId={journal._id} />
           </div>
         )}
       </div>

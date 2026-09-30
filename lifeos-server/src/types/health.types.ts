@@ -55,3 +55,43 @@ export interface HealthSummary {
     sevenDayAverageScore: number | null;
   };
 }
+
+export interface IBodyMetric {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  height: number; // cm
+  weight: number; // kg
+  bmi: number;
+  recordedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export type ActivityType = 'running' | 'gym' | 'cycling' | 'swimming' | 'yoga' | 'other';
+
+export interface IActivityLog {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  type: ActivityType;
+  duration: number; // minutes
+  calories?: number;
+  notes?: string;
+  date: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export type SessionType = 'meditation' | 'breathing' | 'yoga' | 'other';
+
+export interface IMindfulnessSession {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  duration: number; // minutes
+  sessionType: SessionType;
+  moodBefore?: MoodType;
+  moodAfter?: MoodType;
+  notes?: string;
+  date: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}

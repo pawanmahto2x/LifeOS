@@ -10,9 +10,17 @@ interface JournalCardProps {
   onDelete: (journal: IJournal) => void;
   onTagClick?: (tag: string) => void;
   onView?: (journal: IJournal) => void;
+  onAnalyze?: (journal: IJournal) => void;
 }
 
-export function JournalCard({ journal, onEdit, onDelete, onTagClick, onView }: JournalCardProps) {
+export function JournalCard({
+  journal,
+  onEdit,
+  onDelete,
+  onTagClick,
+  onView,
+  onAnalyze,
+}: JournalCardProps) {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   const formattedDate = new Date(journal.createdAt).toLocaleDateString(undefined, {
@@ -83,6 +91,27 @@ export function JournalCard({ journal, onEdit, onDelete, onTagClick, onView }: J
               </div>
             ) : (
               <div className="flex items-center space-x-1 opacity-80 transition-opacity group-hover:opacity-100 sm:opacity-0">
+                {onAnalyze && (
+                  <button
+                    type="button"
+                    onClick={() => onAnalyze(journal)}
+                    className="text-primary hover:bg-primary/10 cursor-pointer rounded-lg p-1.5 transition-colors"
+                    title="AI Behaviour Analysis"
+                  >
+                    <span className="sr-only">Analyze</span>
+                    <svg
+                      className="h-3.5 w-3.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+                    </svg>
+                  </button>
+                )}
                 {onView && (
                   <button
                     type="button"

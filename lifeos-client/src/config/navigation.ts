@@ -11,10 +11,12 @@ import {
   Award,
   Medal,
   BarChart3,
-  GitCommit,
   Bot,
   Settings,
   LucideIcon,
+  Brain,
+  Target,
+  History,
 } from 'lucide-react';
 
 export interface INavItem {
@@ -41,6 +43,10 @@ export const navigationConfig: {
   },
   groups: [
     {
+      groupName: 'Strategy',
+      items: [{ title: 'Goals', href: '/goals', icon: Target }],
+    },
+    {
       groupName: 'Productivity',
       items: [
         { title: 'Tasks', href: '/tasks', icon: CheckSquare },
@@ -52,7 +58,7 @@ export const navigationConfig: {
       groupName: 'Wellness',
       items: [
         { title: 'Health', href: '/health', icon: HeartPulse },
-        { title: 'Journal', href: '/journal', icon: BookOpen },
+        { title: 'Journal', href: '/journal', icon: BookOpen, badge: 'AI' },
         { title: 'Digital Detox', href: '/digital-detox', icon: Smartphone },
       ],
     },
@@ -66,10 +72,12 @@ export const navigationConfig: {
       ],
     },
     {
-      groupName: 'Insights',
+      groupName: 'Intelligence',
       items: [
+        { title: 'Insights', href: '/insights', icon: Brain },
+        { title: 'Daily Mission', href: '/daily-mission', icon: Target },
+        { title: 'Life Replay', href: '/life-replay', icon: History },
         { title: 'Reports', href: '/reports', icon: BarChart3 },
-        { title: 'Life Timeline', href: '/timeline', icon: GitCommit },
         { title: 'AI Coach', href: '/ai-coach', icon: Bot },
       ],
     },

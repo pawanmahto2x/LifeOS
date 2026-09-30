@@ -6,6 +6,8 @@ import { FocusSession } from '../models/focus-session.model';
 import { WaterLog } from '../models/water-log.model';
 import { SleepLog } from '../models/sleep-log.model';
 import { MoodLog } from '../models/mood-log.model';
+import { PersonalBaseline } from '../models/personal-baseline.model';
+import { DailyMission } from '../models/daily-mission.model';
 import {
   IAISettingsPublicDto,
   ISaveAISettingsDto,
@@ -152,7 +154,7 @@ export class AIService {
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    const [tasks, habits, focusSessions, todayWater] = await Promise.all([
+    const [tasks, habits, focusSessions, todayWater, baseline, dailyMission] = await Promise.all([
       Task.find({
         userId,
         isDeleted: false,
@@ -162,6 +164,8 @@ export class AIService {
       Habit.find({ userId, isDeleted: false, isPaused: false }).exec(),
       FocusSession.find({ userId, startedAt: { $gte: oneWeekAgo }, completed: true }).exec(),
       WaterLog.find({ userId, loggedAt: { $gte: todayStart } }).exec(),
+      PersonalBaseline.findOne({ userId, period: '30d' }).exec(),
+      DailyMission.findOne({ userId, date: todayStart }).exec(),
     ]);
 
     const tasksCompletedThisWeek = tasks.length;
@@ -176,8 +180,33 @@ export class AIService {
       currentHydrationMl,
     };
 
-    // Synthesize personalized coaching response grounded in verified metrics
-    const answer = `Based on your recent LifeOS records: you have completed ${tasksCompletedThisWeek} tasks this week, accumulated ${focusMinutesThisWeek} minutes in deep work, and actively track ${activeHabitCount} habits. Regarding "${question}": Consistency compounds from small, non-negotiable daily anchors. Focus on your top-priority habit and aim for a single 25-minute focus session before midday.`;
+    let fact = '';
+    if (
+      tasksCompletedThisWeek === 0 &&
+      focusMinutesThisWeek === 0 &&
+      activeHabitCount === 0 &&
+      currentHydrationMl === 0
+    ) {
+      fact = "I don't have enough recorded data to determine that.";
+    } else {
+      const parts = [
+        `You completed ${tasksCompletedThisWeek} tasks this week, accumulated ${focusMinutesThisWeek} minutes in deep work, actively track ${activeHabitCount} habits, and drank ${currentHydrationMl}ml of water today.`,
+      ];
+      if (baseline) {
+        parts.push(
+          `Your 30-day baseline average focus is ${baseline.avgFocusMinutesPerDay} minutes per day.`,
+        );
+      }
+      if (dailyMission && dailyMission.primaryMission) {
+        parts.push(`Today's daily mission is "${dailyMission.primaryMission.title}".`);
+      }
+      fact = parts.join(' ');
+    }
+
+    const inference = `This may be associated with your progress regarding "${question}".`;
+    const recommendation = `You could try scheduling your most important task during your usual high-focus period.`;
+
+    const answer = `FACT:\n"${fact}"\n\nINFERENCE:\n"${inference}"\n\nRECOMMENDATION:\n"${recommendation}"`;
 
     return {
       answer,

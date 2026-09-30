@@ -3,19 +3,23 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { journalApiService } from '@/features/journal/services/journal.service';
+import { journalAnalysisApiService } from '@/features/journal/services/journal-analysis.service';
 import { JournalCard } from '@/features/journal/components/journal-card';
 import { JournalDialog } from '@/features/journal/components/journal-dialog';
 import { JournalViewDialog } from '@/features/journal/components/journal-view-dialog';
+import { RecurringThemes } from '@/features/journal/components/RecurringThemes';
 import { IJournal } from '@/types/journal.types';
-import { Plus, Search, BookOpen, X, Sparkles } from 'lucide-react';
+import { Plus, Search, BookOpen, X, Sparkles, TrendingUp } from 'lucide-react';
 
 export default function JournalPage() {
   const queryClient = useQueryClient();
   const [selectedMood, setSelectedMood] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showThemeDetails, setShowThemeDetails] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [journalToEdit, setJournalToEdit] = useState<IJournal | null>(null);
   const [journalToView, setJournalToView] = useState<IJournal | null>(null);
+  const [viewDialogTab, setViewDialogTab] = useState<'entry' | 'analysis'>('entry');
   const [isViewOpen, setIsViewOpen] = useState(false);
 
   // Fetch journals query
@@ -34,7 +38,14 @@ export default function JournalPage() {
     },
   });
 
+  // Fetch recurring journal themes
+  const { data: themesRes } = useQuery({
+    queryKey: ['journal-themes'],
+    queryFn: () => journalAnalysisApiService.getRecurringThemes(),
+  });
+
   const journals = data?.journals || [];
+  const recurringThemes = themesRes?.data?.themes || [];
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -58,6 +69,13 @@ export default function JournalPage() {
 
   const handleView = (journal: IJournal) => {
     setJournalToView(journal);
+    setViewDialogTab('entry');
+    setIsViewOpen(true);
+  };
+
+  const handleAnalyze = (journal: IJournal) => {
+    setJournalToView(journal);
+    setViewDialogTab('analysis');
     setIsViewOpen(true);
   };
 
@@ -79,13 +97,16 @@ export default function JournalPage() {
   const hasActiveFilters = selectedMood !== 'All' || searchQuery.trim().length > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="animate-in fade-in space-y-6 pb-20 duration-300">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">Journal</h1>
+          <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
+            Journal & Reflection
+          </h1>
           <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
-            Reflect on your daily experiences, emotional states, and insights in private.
+            Reflect honestly on your daily experiences and connect your reflections with your real
+            behavioural data.
           </p>
         </div>
 
@@ -97,6 +118,54 @@ export default function JournalPage() {
           <span>New Entry</span>
         </button>
       </div>
+
+      {/* Recurring Themes Insight Banner */}
+      {recurringThemes.length > 0 && (
+        <div className="border-border/80 bg-card space-y-3 rounded-2xl border p-4 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="text-primary h-4 w-4" />
+              <h3 className="text-foreground text-xs font-bold tracking-wider uppercase">
+                Recurring Reflection Themes
+              </h3>
+              <span className="text-muted-foreground text-[11px]">
+                ({themesRes?.data?.period || 'Across your recent entries'})
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowThemeDetails(!showThemeDetails)}
+              className="text-primary hover:text-primary/80 cursor-pointer text-xs font-semibold"
+            >
+              {showThemeDetails ? 'Hide breakdown' : 'Detailed breakdown →'}
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {recurringThemes.slice(0, 6).map((t) => (
+              <button
+                key={t.theme}
+                type="button"
+                onClick={() => setSearchQuery(t.theme)}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
+                  searchQuery.toLowerCase() === t.theme.toLowerCase()
+                    ? 'border-primary bg-primary/10 text-primary font-semibold'
+                    : 'border-border/70 bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                <span className="capitalize">{t.theme}</span>
+                <span className="bg-background/80 py-0.2 rounded px-1.5 text-[10px] font-bold">
+                  {t.count}
+                </span>
+              </button>
+            ))}
+          </div>
+          {showThemeDetails && (
+            <div className="border-border/60 border-t pt-2">
+              <RecurringThemes />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="border-border/80 bg-card flex flex-col gap-3 rounded-2xl border p-3 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
@@ -120,7 +189,7 @@ export default function JournalPage() {
           <Search className="text-muted-foreground pointer-events-none absolute top-2.5 left-3 h-3.5 w-3.5" />
           <input
             type="text"
-            placeholder="Search entries or tags..."
+            placeholder="Search entries, keywords, or themes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="border-input bg-background/80 text-foreground placeholder:text-muted-foreground focus:ring-ring focus:border-primary/40 w-full rounded-xl border py-1.5 pr-8 pl-9 text-xs transition-colors focus:ring-2 focus:outline-none"
@@ -228,6 +297,7 @@ export default function JournalPage() {
               onDelete={(j) => deleteMutation.mutate(j)}
               onTagClick={handleTagClick}
               onView={handleView}
+              onAnalyze={handleAnalyze}
             />
           ))}
         </div>
@@ -240,7 +310,7 @@ export default function JournalPage() {
         journalToEdit={journalToEdit}
       />
 
-      {/* Journal View / Reader Modal Dialog */}
+      {/* Journal View / Reader & AI Analysis Modal Dialog */}
       <JournalViewDialog
         isOpen={isViewOpen}
         onClose={() => {
@@ -248,6 +318,7 @@ export default function JournalPage() {
           setJournalToView(null);
         }}
         journal={journalToView}
+        initialTab={viewDialogTab}
         onEdit={(j) => {
           setIsViewOpen(false);
           handleEdit(j);

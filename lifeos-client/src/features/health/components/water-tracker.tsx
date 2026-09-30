@@ -13,7 +13,22 @@ export function WaterTracker() {
   const { data: waterData, isLoading } = useQuery({
     queryKey: ['health-water'],
     queryFn: async () => {
-      const res = await healthApiService.getWaterLogs();
+      const today = new Date();
+      const startDate = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+      ).toISOString();
+      const endDate = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+        23,
+        59,
+        59,
+        999,
+      ).toISOString();
+      const res = await healthApiService.getWaterLogs({ startDate, endDate, limit: 100 });
       return res.data;
     },
   });
