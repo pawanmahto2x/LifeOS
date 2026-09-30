@@ -1,13 +1,38 @@
 export type GoalCategory =
-  'Health' | 'Career' | 'Finance' | 'Relationships' | 'Personal Development' | 'Other';
+  | 'career'
+  | 'education'
+  | 'health'
+  | 'fitness'
+  | 'personal'
+  | 'finance'
+  | 'relationships'
+  | 'creativity'
+  | 'other'
+  | 'Health'
+  | 'Career'
+  | 'Finance'
+  | 'Relationships'
+  | 'Personal Development'
+  | 'Other';
 
-export type GoalStatus = 'Not Started' | 'In Progress' | 'Completed' | 'On Hold' | 'Cancelled';
+export type GoalStatus =
+  | 'active'
+  | 'completed'
+  | 'paused'
+  | 'abandoned'
+  | 'Not Started'
+  | 'In Progress'
+  | 'Completed'
+  | 'On Hold'
+  | 'Cancelled';
 
 export interface IMilestone {
   _id: string;
   title: string;
+  completed?: boolean;
+  isCompleted?: boolean;
+  order?: number;
   targetDate?: string;
-  isCompleted: boolean;
   completedAt?: string;
 }
 

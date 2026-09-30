@@ -11,12 +11,19 @@ export class GoalService {
 
   private calculateProgress(milestones: any[]): number {
     if (!milestones || milestones.length === 0) return 0;
-    const completed = milestones.filter((m) => m.completed).length;
+    const completed = milestones.filter((m) => Boolean(m.completed ?? m.isCompleted)).length;
     return Math.round((completed / milestones.length) * 100);
   }
 
   async create(userId: string, data: any): Promise<IGoalDocument> {
     data.userId = userId;
+    if (data.milestones) {
+      data.milestones = data.milestones.map((m: any, idx: number) => ({
+        title: m.title,
+        completed: Boolean(m.completed ?? m.isCompleted),
+        order: m.order ?? idx,
+      }));
+    }
     data.progress = this.calculateProgress(data.milestones);
     return await this.goalRepository.create(data);
   }
@@ -36,6 +43,12 @@ export class GoalService {
     if (!goal) throw new NotFoundError('Goal not found');
 
     if (data.milestones) {
+      data.milestones = data.milestones.map((m: any, idx: number) => ({
+        _id: m._id,
+        title: m.title,
+        completed: Boolean(m.completed ?? m.isCompleted),
+        order: m.order ?? idx,
+      }));
       data.progress = this.calculateProgress(data.milestones);
     }
 
@@ -52,79 +65,115 @@ export class GoalService {
 
   async generateAIPlan(goalId: string, userId: string): Promise<IAIGoalPlan> {
     const goal = await this.findById(goalId, userId);
-
     const title = goal.title.toLowerCase();
     let plan: IAIGoalPlan;
 
     if (
       title.includes('developer') ||
-      title.includes('react') ||
-      title.includes('code') ||
-      goal.category === 'career' ||
-      goal.category === 'education'
+      title.includes('full stack') ||
+      title.includes('software') ||
+      title.includes('coding') ||
+      title.includes('react')
     ) {
       plan = {
         milestones: [
-          'Learn fundamentals',
-          'Build 3 side projects',
-          'Master advanced concepts',
-          'Prepare for interviews',
-          'Apply for jobs',
+          'Strengthen JavaScript Fundamentals',
+          'Master Modern React & State Management',
+          'Learn Backend Development with Node.js & Express',
+          'Database Design & Modeling with MongoDB',
+          'Build and Deploy 2 Production-Ready Full-Stack Projects',
+          'Portfolio Architecture & Resume Refinement',
+          'Interview Preparation & Technical Assessment Practice',
         ],
         tasks: [
-          { milestoneIndex: 0, title: 'Read documentation' },
-          { milestoneIndex: 0, title: 'Complete online course' },
-          { milestoneIndex: 1, title: 'Build a to-do app' },
-          { milestoneIndex: 1, title: 'Build a weather app' },
-          { milestoneIndex: 1, title: 'Build a clone of a popular site' },
+          { milestoneIndex: 0, title: 'Deep dive into JS Closures, Promises & Event Loop' },
+          { milestoneIndex: 1, title: 'Build a interactive React application with Custom Hooks' },
+          { milestoneIndex: 2, title: 'Implement RESTful APIs with JWT authentication in Node.js' },
+          { milestoneIndex: 3, title: 'Design normalized and embedded data models in MongoDB' },
+          { milestoneIndex: 4, title: 'Deploy full-stack project on cloud hosting with CI/CD' },
         ],
         habits: [
-          { title: 'Code for 1 hour', frequency: 'daily' },
-          { title: 'Read tech blogs', frequency: 'weekly' },
+          { title: 'Code for 60 minutes daily', frequency: 'daily' },
+          { title: 'Solve 2 technical problem-solving challenges', frequency: 'daily' },
+          { title: 'Read engineering documentation for 20 minutes', frequency: 'daily' },
+        ],
+      };
+    } else if (
+      title.includes('ai') ||
+      title.includes('machine learning') ||
+      title.includes('data science') ||
+      title.includes('python')
+    ) {
+      plan = {
+        milestones: [
+          'Python Mastery & Scientific Computing (NumPy, Pandas)',
+          'Mathematics for ML (Linear Algebra, Calculus, Probability)',
+          'Classical Machine Learning Algorithms & Scikit-Learn',
+          'Deep Learning & Neural Networks with PyTorch',
+          'LLM Fine-Tuning & Vector Databases (RAG)',
+          'End-to-End MLOps Pipeline & Model Deployment',
+        ],
+        tasks: [
+          {
+            milestoneIndex: 0,
+            title: 'Complete Python advanced concepts and data manipulation exercises',
+          },
+          { milestoneIndex: 1, title: 'Implement gradient descent from scratch' },
+          { milestoneIndex: 2, title: 'Train and evaluate classification and regression models' },
+          {
+            milestoneIndex: 4,
+            title: 'Build a semantic search application using embeddings and vector search',
+          },
+        ],
+        habits: [
+          { title: 'Study ML theory & code for 60 minutes', frequency: 'daily' },
+          { title: 'Read 1 research paper or technical blog weekly', frequency: 'weekly' },
         ],
       };
     } else if (
       goal.category === 'health' ||
       goal.category === 'fitness' ||
       title.includes('fit') ||
-      title.includes('weight')
+      title.includes('weight') ||
+      title.includes('workout') ||
+      title.includes('exercise')
     ) {
       plan = {
         milestones: [
-          'Set baseline',
-          'Establish routine',
-          'Increase intensity',
-          'Reach target metric',
+          'Establish Health Baseline & Medical/Screening Clearance',
+          'Build Consistent Routine (Weeks 1-4)',
+          'Progressive Overload & Habit Solidification (Weeks 5-8)',
+          'Reach Milestone Body & Energy Targets (Weeks 9-12)',
         ],
         tasks: [
-          { milestoneIndex: 0, title: 'Buy workout gear' },
-          { milestoneIndex: 0, title: 'Get a gym membership' },
-          { milestoneIndex: 1, title: 'Create a meal plan' },
-          { milestoneIndex: 2, title: 'Try a new workout class' },
+          { milestoneIndex: 0, title: 'Record starting height, weight, and baseline metrics' },
+          { milestoneIndex: 1, title: 'Schedule 3 specific weekly workout times in calendar' },
+          { milestoneIndex: 1, title: 'Prepare high-protein, balanced meal plan for the week' },
+          { milestoneIndex: 2, title: 'Log workout duration and intensity in Health module' },
         ],
         habits: [
-          { title: 'Workout', frequency: 'daily' },
-          { title: 'Drink 2L of water', frequency: 'daily' },
+          { title: 'Exercise 4 days per week', frequency: 'weekly' },
+          { title: 'Drink at least 2.5L water daily', frequency: 'daily' },
+          { title: 'Maintain a consistent 7-8 hour sleep schedule', frequency: 'daily' },
         ],
       };
     } else {
       plan = {
         milestones: [
-          'Research & Planning',
-          'First Steps',
-          'Consistent Action',
-          'Review & Adjust',
-          'Final Push',
+          'Strategic Planning & Clear Success Criteria',
+          'Foundation & Initial Execution',
+          'Consistency & Overcoming Plateaus',
+          'Review, Refinement & Optimization',
+          'Final Milestone Delivery & Celebration',
         ],
         tasks: [
-          { milestoneIndex: 0, title: 'Gather resources' },
-          { milestoneIndex: 0, title: 'Create a schedule' },
-          { milestoneIndex: 1, title: 'Complete first milestone task' },
-          { milestoneIndex: 3, title: 'Mid-way evaluation' },
+          { milestoneIndex: 0, title: 'Define measurable output criteria for this goal' },
+          { milestoneIndex: 1, title: 'Complete first actionable task' },
+          { milestoneIndex: 2, title: 'Conduct mid-way evaluation against baseline' },
         ],
         habits: [
-          { title: 'Review goal progress', frequency: 'weekly' },
-          { title: 'Spend 30 mins on goal', frequency: 'daily' },
+          { title: 'Dedicate 45 minutes focused work on goal', frequency: 'daily' },
+          { title: 'Weekly progress and obstacle reflection', frequency: 'weekly' },
         ],
       };
     }
@@ -149,22 +198,32 @@ export class GoalService {
     goal.progress = this.calculateProgress(goal.milestones);
     await goal.save();
 
-    for (const taskData of acceptedPlan.tasks) {
-      await Task.create({
-        userId,
-        title: taskData.title,
-        status: 'Pending',
-        priority: 'Medium',
-        dueDate: goal.deadline,
-      });
+    // Create tasks for accepted plan
+    if (acceptedPlan.tasks && acceptedPlan.tasks.length > 0) {
+      for (const taskData of acceptedPlan.tasks) {
+        await Task.create({
+          userId,
+          title: taskData.title,
+          category: goal.category
+            ? goal.category.charAt(0).toUpperCase() + goal.category.slice(1)
+            : 'Goals',
+          status: 'Pending',
+          priority: 'High',
+          dueDate: goal.deadline,
+        });
+      }
     }
 
-    for (const habitData of acceptedPlan.habits) {
-      await Habit.create({
-        userId,
-        title: habitData.title,
-        frequency: habitData.frequency === 'daily' ? 'Daily' : 'Weekly',
-      });
+    // Create habits for accepted plan (1-3 habits)
+    if (acceptedPlan.habits && acceptedPlan.habits.length > 0) {
+      for (const habitData of acceptedPlan.habits) {
+        await Habit.create({
+          userId,
+          title: habitData.title,
+          frequency: habitData.frequency === 'weekly' ? 'Weekly' : 'Daily',
+          targetDays: habitData.frequency === 'weekly' ? 3 : 7,
+        });
+      }
     }
 
     return goal;
@@ -178,36 +237,48 @@ export class GoalService {
     const tasksCount = await Task.countDocuments({
       userId,
       status: 'Completed',
-      updatedAt: { $gte: thirtyDaysAgo },
+      isDeleted: false,
+      completedAt: { $gte: thirtyDaysAgo },
     });
-    const habitsCount = await Habit.countDocuments({ userId, updatedAt: { $gte: thirtyDaysAgo } });
-    const focusSessionsCount = await FocusSession.countDocuments({
-      userId,
-      createdAt: { $gte: thirtyDaysAgo },
-    });
+    const habitsCount = await Habit.countDocuments({ userId, isDeleted: false, isActive: true });
+    const focusSessions = await FocusSession.aggregate([
+      { $match: { userId: goal.userId, completed: true, startedAt: { $gte: thirtyDaysAgo } } },
+      { $group: { _id: null, count: { $sum: 1 }, totalDuration: { $sum: '$duration' } } },
+    ]);
+    const focusCount = focusSessions[0]?.count || 0;
+
+    const completedMilestones = goal.milestones.filter((m) => m.completed).length;
+    const totalMilestones = goal.milestones.length;
 
     const report: IGoalReport = {
       goalId,
       progress: {
-        previous: Math.max(0, goal.progress - 10),
+        previous: Math.max(0, goal.progress - 15),
         current: goal.progress,
       },
       completed: {
         tasks: tasksCount,
         habits: habitsCount,
-        focusSessions: focusSessionsCount,
+        focusSessions: focusCount,
       },
       consistency: {
-        general: Math.min(100, (tasksCount + habitsCount + focusSessionsCount) * 2),
+        coding: Math.min(100, focusCount * 6 + tasksCount * 2),
+        focus: Math.min(100, focusCount * 8),
+        general: Math.min(
+          100,
+          Math.round(
+            (completedMilestones / Math.max(1, totalMilestones)) * 60 + (tasksCount > 0 ? 40 : 0),
+          ),
+        ),
       },
       obstacles:
-        focusSessionsCount < 5
-          ? 'Your progress slowed during weeks with fewer focus sessions. Consider scheduling dedicated focus blocks.'
-          : 'You are doing well, but could improve task completion speed.',
+        focusCount < 4
+          ? `Based on your stored data, your momentum slowed during periods with fewer completed focus sessions (${focusCount} recorded this month). Consider scheduling dedicated deep-work blocks.`
+          : `You are maintaining steady momentum with ${focusCount} focus sessions. Focus on completing incomplete milestone tasks.`,
       nextMonthPriorities: [
-        'Focus on next milestone',
-        'Maintain daily habits',
-        'Increase focus session duration',
+        `Advance the next active milestone: "${goal.milestones.find((m) => !m.completed)?.title || 'Finalize goal deliverables'}"`,
+        'Maintain consistent daily habit check-ins without breaking streaks',
+        'Protect at least two 45-minute deep focus sessions every week',
       ],
     };
 

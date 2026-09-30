@@ -54,7 +54,7 @@ export default function GoalsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {goals.map((goal) => {
-            const currentMilestone = goal.milestones?.find((m) => !m.isCompleted);
+            const currentMilestone = goal.milestones?.find((m) => !(m.completed ?? m.isCompleted));
 
             return (
               <Link key={goal._id} href={`/goals/${goal._id}`}>
