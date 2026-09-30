@@ -5,8 +5,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { journalApiService } from '@/features/journal/services/journal.service';
 import { JournalCard } from '@/features/journal/components/journal-card';
 import { JournalDialog } from '@/features/journal/components/journal-dialog';
+import { JournalViewDialog } from '@/features/journal/components/journal-view-dialog';
 import { IJournal } from '@/types/journal.types';
-import { Plus, Search, BookOpen } from 'lucide-react';
+import { Plus, Search, BookOpen, X, Sparkles } from 'lucide-react';
 
 export default function JournalPage() {
   const queryClient = useQueryClient();
@@ -14,6 +15,8 @@ export default function JournalPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [journalToEdit, setJournalToEdit] = useState<IJournal | null>(null);
+  const [journalToView, setJournalToView] = useState<IJournal | null>(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
 
   // Fetch journals query
   const { data, isLoading } = useQuery({
@@ -40,6 +43,11 @@ export default function JournalPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journals'] });
+      queryClient.refetchQueries({ queryKey: ['journals'] });
+      if (journalToView) {
+        setIsViewOpen(false);
+        setJournalToView(null);
+      }
     },
   });
 
@@ -48,12 +56,27 @@ export default function JournalPage() {
     setIsDialogOpen(true);
   };
 
+  const handleView = (journal: IJournal) => {
+    setJournalToView(journal);
+    setIsViewOpen(true);
+  };
+
   const handleCreate = () => {
     setJournalToEdit(null);
     setIsDialogOpen(true);
   };
 
+  const handleTagClick = (tag: string) => {
+    setSearchQuery(tag);
+  };
+
+  const clearFilters = () => {
+    setSelectedMood('All');
+    setSearchQuery('');
+  };
+
   const moodTabs = ['All', 'Excellent', 'Happy', 'Calm', 'Neutral', 'Stressed', 'Sad', 'Angry'];
+  const hasActiveFilters = selectedMood !== 'All' || searchQuery.trim().length > 0;
 
   return (
     <div className="space-y-6">
@@ -100,10 +123,58 @@ export default function JournalPage() {
             placeholder="Search entries or tags..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-input bg-background/80 text-foreground placeholder:text-muted-foreground focus:ring-ring focus:border-primary/40 w-full rounded-xl border py-1.5 pr-3 pl-9 text-xs transition-colors focus:ring-2 focus:outline-none"
+            className="border-input bg-background/80 text-foreground placeholder:text-muted-foreground focus:ring-ring focus:border-primary/40 w-full rounded-xl border py-1.5 pr-8 pl-9 text-xs transition-colors focus:ring-2 focus:outline-none"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="text-muted-foreground hover:text-foreground absolute top-2.5 right-2.5 cursor-pointer"
+              title="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Active Filter Indicators */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-muted-foreground">Active filters:</span>
+          {selectedMood !== 'All' && (
+            <span className="border-border bg-muted/60 text-foreground inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[11px]">
+              Mood: <strong>{selectedMood}</strong>
+              <button
+                type="button"
+                onClick={() => setSelectedMood('All')}
+                className="hover:text-destructive ml-0.5 cursor-pointer"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          )}
+          {searchQuery && (
+            <span className="border-border bg-muted/60 text-foreground inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[11px]">
+              Query: <strong>&ldquo;{searchQuery}&rdquo;</strong>
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="hover:text-destructive ml-0.5 cursor-pointer"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-primary ml-1 cursor-pointer text-[11px] font-medium hover:underline"
+          >
+            Reset all
+          </button>
+        </div>
+      )}
 
       {/* Journal Feed or Empty State */}
       {isLoading ? (
@@ -122,18 +193,29 @@ export default function JournalPage() {
           </div>
           <h3 className="text-foreground text-sm font-semibold">No journal entries found</h3>
           <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs">
-            {searchQuery || selectedMood !== 'All'
-              ? 'No entries match your search or mood filter. Try resetting your filter.'
+            {hasActiveFilters
+              ? 'No reflections match your current search or mood filters.'
               : 'You have not written any journal entries yet. Capture your thoughts and reflections today.'}
           </p>
-          <div className="mt-5">
-            <button
-              onClick={handleCreate}
-              className="border-border bg-muted/80 text-foreground hover:bg-muted inline-flex cursor-pointer items-center space-x-1.5 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-[0.98]"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Write your first reflection</span>
-            </button>
+          <div className="mt-5 flex items-center justify-center gap-2">
+            {hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="border-border bg-muted/80 text-foreground hover:bg-muted inline-flex cursor-pointer items-center space-x-1.5 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-[0.98]"
+              >
+                <span>Clear Filters</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleCreate}
+                className="border-border bg-muted/80 text-foreground hover:bg-muted inline-flex cursor-pointer items-center space-x-1.5 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-[0.98]"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Write your first reflection</span>
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -144,6 +226,8 @@ export default function JournalPage() {
               journal={journal}
               onEdit={handleEdit}
               onDelete={(j) => deleteMutation.mutate(j)}
+              onTagClick={handleTagClick}
+              onView={handleView}
             />
           ))}
         </div>
@@ -154,6 +238,20 @@ export default function JournalPage() {
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         journalToEdit={journalToEdit}
+      />
+
+      {/* Journal View / Reader Modal Dialog */}
+      <JournalViewDialog
+        isOpen={isViewOpen}
+        onClose={() => {
+          setIsViewOpen(false);
+          setJournalToView(null);
+        }}
+        journal={journalToView}
+        onEdit={(j) => {
+          setIsViewOpen(false);
+          handleEdit(j);
+        }}
       />
     </div>
   );

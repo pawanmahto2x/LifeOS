@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { journalApiService } from '../services/journal.service';
 import { IJournal, JournalMood } from '@/types/journal.types';
-import { X } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
 
 const journalFormSchema = z.object({
   title: z.string().trim().min(1, 'Title is required'),
@@ -23,6 +23,37 @@ interface JournalDialogProps {
   onClose: () => void;
   journalToEdit?: IJournal | null;
 }
+
+const PROMPT_TEMPLATES = [
+  {
+    label: '🌅 Morning Clarity',
+    title: 'Morning Clarity',
+    content: `• What is my #1 priority today?\n  \n• What potential distraction might derail me, and how will I avoid it?\n  \n• My intention for today:\n  `,
+    tags: 'morning, focus, intention',
+    mood: 'Calm' as const,
+  },
+  {
+    label: '🌙 Evening Decompression',
+    title: 'Evening Reflection',
+    content: `• What went well today?\n  \n• What did I learn or wish I handled differently?\n  \n• What am I letting go of before sleep?\n  `,
+    tags: 'evening, reflection, gratitude',
+    mood: 'Calm' as const,
+  },
+  {
+    label: '🧘 Gratitude & Stoic Grounding',
+    title: 'Gratitude & Grounding',
+    content: `• 3 things I am genuinely grateful for right now:\n  1. \n  2. \n  3. \n\n• What happened today that was beyond my control, and how did I respond?\n  `,
+    tags: 'gratitude, stoicism, mindfulness',
+    mood: 'Happy' as const,
+  },
+  {
+    label: '🧠 Mental RAM Dump',
+    title: 'Mental RAM Dump',
+    content: `[Uncensored brain dump — unloading thoughts, loose ends, and open mental loops to regain mental clarity]\n\n`,
+    tags: 'braindump, clarity',
+    mood: 'Neutral' as const,
+  },
+];
 
 export function JournalDialog({ isOpen, onClose, journalToEdit }: JournalDialogProps) {
   const queryClient = useQueryClient();
@@ -67,6 +98,21 @@ export function JournalDialog({ isOpen, onClose, journalToEdit }: JournalDialogP
 
   if (!isOpen) return null;
 
+  const handleApplyTemplate = (tmpl: (typeof PROMPT_TEMPLATES)[number]) => {
+    const currentContent = watch('content') || '';
+    const todayStr = new Date().toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    });
+    setValue('title', `${tmpl.title} — ${todayStr}`);
+    setValue(
+      'content',
+      currentContent.trim() ? `${tmpl.content}\n\n${currentContent}` : tmpl.content,
+    );
+    setValue('mood', tmpl.mood);
+    setValue('tagsString', tmpl.tags);
+  };
+
   const onSubmit = async (data: JournalFormData) => {
     try {
       setIsSubmitting(true);
@@ -110,12 +156,13 @@ export function JournalDialog({ isOpen, onClose, journalToEdit }: JournalDialogP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="border-border/80 bg-card text-card-foreground relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6 shadow-2xl transition-all">
+      <div className="border-border/80 bg-card text-card-foreground relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border p-6 shadow-2xl transition-all sm:p-7">
         <div className="border-border/80 flex items-center justify-between border-b pb-4">
           <h2 className="text-foreground text-base font-bold">
             {journalToEdit ? 'Edit Reflection' : 'New Journal Entry'}
           </h2>
           <button
+            type="button"
             onClick={onClose}
             className="text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer rounded-lg p-1.5 transition-colors"
             aria-label="Close dialog"
@@ -131,6 +178,28 @@ export function JournalDialog({ isOpen, onClose, journalToEdit }: JournalDialogP
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
+          {/* Quick Guided Reflection Templates */}
+          {!journalToEdit && (
+            <div className="bg-muted/30 border-border/70 rounded-2xl border p-3.5">
+              <div className="text-foreground mb-2 flex items-center gap-1.5 text-xs font-semibold">
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                <span>Quick Reflection Prompts:</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {PROMPT_TEMPLATES.map((tmpl) => (
+                  <button
+                    key={tmpl.title}
+                    type="button"
+                    onClick={() => handleApplyTemplate(tmpl)}
+                    className="border-border/80 bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground cursor-pointer rounded-xl border px-3 py-1 text-xs font-medium shadow-2xs transition-all"
+                  >
+                    {tmpl.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
               Title *
@@ -156,7 +225,7 @@ export function JournalDialog({ isOpen, onClose, journalToEdit }: JournalDialogP
                   key={mood}
                   type="button"
                   onClick={() => setValue('mood', mood)}
-                  className={`cursor-pointer rounded-lg border px-3 py-1 text-xs font-medium transition-all ${
+                  className={`cursor-pointer rounded-xl border px-3 py-1 text-xs font-medium transition-all ${
                     selectedMood === mood
                       ? 'bg-primary text-primary-foreground border-transparent font-semibold shadow-2xs'
                       : 'border-border/80 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
