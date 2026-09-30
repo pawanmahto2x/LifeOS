@@ -6,7 +6,6 @@ import {
   HeartPulse,
   BookOpen,
   Smartphone,
-  AlertTriangle,
   Users,
   Trophy,
   Award,
@@ -55,7 +54,6 @@ export const navigationConfig: {
         { title: 'Health', href: '/health', icon: HeartPulse },
         { title: 'Journal', href: '/journal', icon: BookOpen },
         { title: 'Digital Detox', href: '/digital-detox', icon: Smartphone },
-        { title: 'Emergency Mode', href: '/emergency', icon: AlertTriangle },
       ],
     },
     {

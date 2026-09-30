@@ -20,10 +20,12 @@ import {
   Monitor,
   BookOpen,
   Bell,
+  AlertTriangle,
 } from 'lucide-react';
+import { emergencyModeApiService } from '@/features/emergency-mode/services/emergency-mode.service';
 
 type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak' | 'custom';
-type DisciplineProfile = 'strict' | 'software';
+type DisciplineProfile = 'strict' | 'software' | 'emergency';
 
 export function FocusTimer() {
   const queryClient = useQueryClient();
@@ -48,6 +50,16 @@ export function FocusTimer() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const leftAtRef = useRef<number | null>(null);
   const originalTitleRef = useRef<string>('');
+
+  // Auto-switch to Emergency mode if URL query contains mode=emergency
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('mode') === 'emergency') {
+        setDisciplineProfile('emergency');
+      }
+    }
+  }, []);
 
   // Fetch active user tasks to attach
   const { data: tasksData } = useQuery({
@@ -176,6 +188,10 @@ export function FocusTimer() {
           setIsRunning(false);
           targetEndTimeRef.current = null;
           setTimeLeft(0);
+          if (disciplineProfile === 'emergency') {
+            emergencyModeApiService.disable().catch(() => {});
+            queryClient.invalidateQueries({ queryKey: ['emergency-mode-status'] });
+          }
           playCompletionSound();
           triggerDesktopNotification();
           setIsSummaryOpen(true);
@@ -190,7 +206,7 @@ export function FocusTimer() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRunning]);
+  }, [isRunning, disciplineProfile]);
 
   // Capture original page title
   useEffect(() => {
@@ -214,16 +230,21 @@ export function FocusTimer() {
     const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     if (!document.hidden) {
       document.title =
-        disciplineProfile === 'software'
-          ? `💻 (${formatted}) Deep Work • LifeOS`
-          : `(${formatted}) Focus Mode • LifeOS`;
+        disciplineProfile === 'emergency'
+          ? `🚨 (${formatted}) CRISIS LOCKDOWN • LifeOS`
+          : disciplineProfile === 'software'
+            ? `💻 (${formatted}) Deep Work • LifeOS`
+            : `(${formatted}) Focus Mode • LifeOS`;
     }
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
         // User switched away from LifeOS
         leftAtRef.current = Date.now();
-        if (disciplineProfile === 'strict') {
+        if (disciplineProfile === 'emergency') {
+          document.title = '🚨 CRISIS LOCKDOWN BREACHED! • LifeOS';
+          setDistractions((prev) => prev + 1);
+        } else if (disciplineProfile === 'strict') {
           document.title = '⚠️ Return to Focus! • LifeOS';
           setDistractions((prev) => prev + 1);
         } else {
@@ -235,7 +256,21 @@ export function FocusTimer() {
           const awaySeconds = Math.round((Date.now() - leftAtRef.current) / 1000);
           leftAtRef.current = null;
 
-          if (disciplineProfile === 'strict') {
+          if (disciplineProfile === 'emergency') {
+            if (awaySeconds >= 30) {
+              // Away for 30s or more in emergency lockdown: Reset timer back to start!
+              handleReset();
+              setFocusGuardAlert({
+                type: 'reset',
+                awaySeconds,
+              });
+            } else if (awaySeconds >= 2) {
+              setFocusGuardAlert({
+                type: 'warning',
+                awaySeconds,
+              });
+            }
+          } else if (disciplineProfile === 'strict') {
             if (awaySeconds >= 60) {
               // Away for 60 seconds or more in strict mode: Reset timer back to start!
               handleReset();
@@ -253,9 +288,11 @@ export function FocusTimer() {
           }
         }
         document.title =
-          disciplineProfile === 'software'
-            ? `💻 (${formatted}) Deep Work • LifeOS`
-            : `(${formatted}) Focus Mode • LifeOS`;
+          disciplineProfile === 'emergency'
+            ? `🚨 (${formatted}) CRISIS LOCKDOWN • LifeOS`
+            : disciplineProfile === 'software'
+              ? `💻 (${formatted}) Deep Work • LifeOS`
+              : `(${formatted}) Focus Mode • LifeOS`;
       }
     };
 
@@ -288,6 +325,10 @@ export function FocusTimer() {
   const handleStart = () => {
     requestNotificationPermission();
     targetEndTimeRef.current = Date.now() + timeLeft * 1000;
+    if (disciplineProfile === 'emergency') {
+      emergencyModeApiService.enable().catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ['emergency-mode-status'] });
+    }
     if (!activeSession && mode !== 'shortBreak' && mode !== 'longBreak') {
       startMutation.mutate();
     } else {
@@ -303,6 +344,10 @@ export function FocusTimer() {
   const handleStop = () => {
     setIsRunning(false);
     targetEndTimeRef.current = null;
+    if (disciplineProfile === 'emergency') {
+      emergencyModeApiService.disable().catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ['emergency-mode-status'] });
+    }
     if (activeSession) {
       setIsSummaryOpen(true);
     } else {
@@ -316,6 +361,10 @@ export function FocusTimer() {
     setActiveSession(null);
     setDistractions(0);
     setTimeLeft(getTargetDurationSeconds(mode, customMinutes));
+    if (disciplineProfile === 'emergency') {
+      emergencyModeApiService.disable().catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ['emergency-mode-status'] });
+    }
     if (typeof document !== 'undefined' && originalTitleRef.current) {
       document.title = originalTitleRef.current;
     }
@@ -348,6 +397,10 @@ export function FocusTimer() {
     <div
       ref={containerRef}
       className={`border-border bg-card rounded-3xl border p-8 shadow-sm transition-all ${
+        disciplineProfile === 'emergency'
+          ? 'border-rose-500/50 ring-1 shadow-rose-500/5 ring-rose-500/20'
+          : ''
+      } ${
         isFullscreen
           ? 'bg-background fixed inset-0 z-50 flex flex-col items-center justify-center rounded-none p-12'
           : ''
@@ -367,12 +420,16 @@ export function FocusTimer() {
             <div>
               <p className="text-sm font-bold">
                 {focusGuardAlert.type === 'reset'
-                  ? 'Focus Block Reset (> 1 Min Away)'
+                  ? disciplineProfile === 'emergency'
+                    ? 'Crisis Lockdown Breached (> 30s Away)'
+                    : 'Focus Block Reset (> 1 Min Away)'
                   : 'Tab Switch Detected (+1 Distraction)'}
               </p>
               <p className="mt-1 leading-relaxed opacity-95">
                 {focusGuardAlert.type === 'reset'
-                  ? `You left LifeOS for ${focusGuardAlert.awaySeconds} seconds (exceeding the 1-minute limit). The timer has been reset to the start point so your focus discipline remains authentic.`
+                  ? disciplineProfile === 'emergency'
+                    ? `You left LifeOS for ${focusGuardAlert.awaySeconds} seconds while under Crisis Lockdown. The timer has been reset to keep your focus unbroken.`
+                    : `You left LifeOS for ${focusGuardAlert.awaySeconds} seconds (exceeding the 1-minute limit). The timer has been reset to the start point so your focus discipline remains authentic.`
                   : `You were away from the focus tab for ${focusGuardAlert.awaySeconds} seconds. Stay locked in to maintain your flow state!`}
               </p>
             </div>
@@ -466,9 +523,9 @@ export function FocusTimer() {
         </div>
       )}
 
-      {/* Discipline Profile Switcher (Strict Study vs Software/Editing) */}
-      <div className="mx-auto mb-4 max-w-sm text-center">
-        <div className="bg-muted/40 border-border/60 inline-flex items-center rounded-xl border p-1 shadow-2xs">
+      {/* Discipline Profile Switcher (Strict Study vs Software vs Crisis Lockdown) */}
+      <div className="mx-auto mb-4 max-w-md text-center">
+        <div className="bg-muted/40 border-border/60 inline-flex flex-wrap items-center justify-center gap-1 rounded-xl border p-1 shadow-2xs">
           <button
             type="button"
             disabled={isRunning}
@@ -480,7 +537,7 @@ export function FocusTimer() {
             } ${isRunning ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
           >
             <BookOpen className="h-3.5 w-3.5" />
-            <span>Strict Study Guard</span>
+            <span>Strict Study</span>
           </button>
           <button
             type="button"
@@ -493,13 +550,29 @@ export function FocusTimer() {
             } ${isRunning ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
           >
             <Monitor className="h-3.5 w-3.5" />
-            <span>Software / Creative Flow</span>
+            <span>Creative Flow</span>
+          </button>
+          <button
+            type="button"
+            disabled={isRunning}
+            onClick={() => setDisciplineProfile('emergency')}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
+              disciplineProfile === 'emergency'
+                ? 'border border-rose-500/30 bg-rose-500/15 text-rose-600 shadow-2xs dark:text-rose-400'
+                : 'text-muted-foreground hover:text-foreground'
+            } ${isRunning ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+          >
+            <AlertTriangle className="h-3.5 w-3.5 text-rose-500" />
+            <span>🚨 Crisis Lockdown</span>
           </button>
         </div>
         <p className="text-muted-foreground mt-1 text-[11px]">
-          {disciplineProfile === 'strict'
-            ? '🛡️ Strict: Leaving tab counts as distraction; > 1 min away resets timer.'
-            : '💻 Creative Flow: Edit in CapCut, Premiere, VS Code! No false penalties & alerts when done.'}
+          {disciplineProfile === 'strict' &&
+            '🛡️ Strict Study: Leaving tab counts as distraction; > 1 min away resets timer.'}
+          {disciplineProfile === 'software' &&
+            '💻 Creative Flow: Edit in VS Code, Premiere, CapCut! No false penalties & alerts when done.'}
+          {disciplineProfile === 'emergency' &&
+            '🚨 Crisis Lockdown: Strict deadline emergency. Suppresses distractions & locks tab. > 30s away resets timer!'}
         </p>
       </div>
 
@@ -521,7 +594,11 @@ export function FocusTimer() {
             cy="100"
             r="90"
             className={`transition-all duration-1000 ${
-              mode === 'pomodoro' || mode === 'custom' ? 'stroke-primary' : 'stroke-emerald-500'
+              disciplineProfile === 'emergency'
+                ? 'stroke-rose-500'
+                : mode === 'pomodoro' || mode === 'custom'
+                  ? 'stroke-primary'
+                  : 'stroke-emerald-500'
             }`}
             strokeWidth="8"
             strokeDasharray="565.48"
@@ -536,7 +613,11 @@ export function FocusTimer() {
             {formattedTime}
           </span>
           <span className="text-muted-foreground mt-2 text-xs font-semibold tracking-widest uppercase">
-            {isRunning ? 'In Flow State' : 'Paused / Ready'}
+            {isRunning
+              ? disciplineProfile === 'emergency'
+                ? '🚨 Crisis Lockdown Active'
+                : 'In Flow State'
+              : 'Paused / Ready'}
           </span>
         </div>
       </div>

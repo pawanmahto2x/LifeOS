@@ -139,11 +139,11 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     },
     {
       id: 'nav-emergency',
-      title: 'Emergency De-escalation',
-      description: 'Activate minimalist survival mode during high overwhelm',
+      title: 'Crisis Lockdown (Focus Mode)',
+      description: 'Activate extreme lockdown mode for crunch deadlines and overwhelm',
       category: 'Navigation',
       icon: ShieldAlert,
-      action: () => navigate('/emergency'),
+      action: () => navigate('/focus?mode=emergency'),
     },
     {
       id: 'nav-groups',
