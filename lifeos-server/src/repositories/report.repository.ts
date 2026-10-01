@@ -16,19 +16,23 @@ export class ReportRepository {
     periodStart: Date,
     periodEnd: Date,
     summary: ReportDocument['summary'],
+    aiSummary?: string,
   ): Promise<ReportDocument> {
+    const updateSet: Record<string, any> = {
+      userId,
+      reportType,
+      periodStart,
+      periodEnd,
+      summary,
+      generatedAt: new Date(),
+    };
+    if (aiSummary !== undefined) {
+      updateSet.aiSummary = aiSummary;
+    }
+
     const result = await Report.findOneAndUpdate(
       { userId, reportType, periodStart },
-      {
-        $set: {
-          userId,
-          reportType,
-          periodStart,
-          periodEnd,
-          summary,
-          generatedAt: new Date(),
-        },
-      },
+      { $set: updateSet },
       {
         new: true,
         upsert: true,

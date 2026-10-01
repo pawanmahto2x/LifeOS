@@ -17,6 +17,9 @@ const ReportSummarySchema = new Schema(
     avgDailyScreenTimeMinutes: { type: Number, default: 0 },
     screenTimeGoalMinutes: { type: Number, default: 120 },
     daysUnderGoal: { type: Number, default: 0 },
+    missionsCompleted: { type: Number, default: 0 },
+    activeGoals: { type: Number, default: 0 },
+    milestonesCompleted: { type: Number, default: 0 },
   },
   { _id: false },
 );
@@ -41,6 +44,9 @@ export interface ReportDocument extends Document {
     avgDailyScreenTimeMinutes: number;
     screenTimeGoalMinutes: number;
     daysUnderGoal: number;
+    missionsCompleted?: number;
+    activeGoals?: number;
+    milestonesCompleted?: number;
   };
   aiSummary?: string;
   generatedAt: Date;

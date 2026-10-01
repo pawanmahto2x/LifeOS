@@ -7,6 +7,8 @@ import { MoodLog } from '../models/mood-log.model';
 import { FocusSession } from '../models/focus-session.model';
 import { ScreenTimeLog } from '../models/screen-time-log.model';
 import { DigitalDetoxSettings } from '../models/digital-detox.model';
+import { DailyMission } from '../models/daily-mission.model';
+import { Goal } from '../models/goal.model';
 import { ReportRepository } from '../repositories/report.repository';
 import { ReportDocument } from '../models/report.model';
 import { ReportType, IReportSummary, IDashboardSummary } from '../types/report.types';
@@ -80,7 +82,12 @@ export class ReportService {
 
   // ─── Core Aggregation ────────────────────────────────────────────────────────
 
-  private async aggregateSummary(userId: string, start: Date, end: Date): Promise<IReportSummary> {
+  private async aggregateSummary(
+    userId: string,
+    start: Date,
+    end: Date,
+    type: ReportType = 'daily',
+  ): Promise<{ summary: IReportSummary; aiSummary: string }> {
     const [
       tasks,
       habits,
@@ -91,6 +98,8 @@ export class ReportService {
       focusSessions,
       screenTimeLogs,
       detoxSettings,
+      dailyMissions,
+      goals,
     ] = await Promise.all([
       Task.find({ userId, isDeleted: false, createdAt: { $gte: start, $lte: end } }).exec(),
       Habit.find({ userId, isDeleted: false }).exec(),
@@ -101,6 +110,8 @@ export class ReportService {
       FocusSession.find({ userId, startedAt: { $gte: start, $lte: end }, completed: true }).exec(),
       ScreenTimeLog.find({ userId, loggedDate: { $gte: start, $lte: end } }).exec(),
       DigitalDetoxSettings.findOne({ userId }).exec(),
+      DailyMission.find({ userId, date: { $gte: start, $lte: end } }).exec(),
+      Goal.find({ userId }).exec(),
     ]);
 
     // Tasks
@@ -158,7 +169,35 @@ export class ReportService {
           )
         : 0;
 
-    return {
+    // Goals & Missions
+    const missionsCompleted = dailyMissions.filter(
+      (m) => m.primaryMission?.completed || m.status === 'completed',
+    ).length;
+    const activeGoals = goals.filter((g) => g.status === 'active').length;
+    const milestonesCompleted = goals.reduce(
+      (acc, g) => acc + (g.milestones?.filter((m: any) => m.completed)?.length || 0),
+      0,
+    );
+
+    // AI Summary Synthesis
+    let aiSummary = `During this ${type} period, you completed ${tasksCompleted} of ${tasksCreated} planned tasks (${tasksCompletionRate}%) and logged ${totalFocusMinutes} minutes of focused deep work. `;
+    if (activeGoals > 0) {
+      aiSummary += `You are advancing ${activeGoals} active strategic goal${activeGoals > 1 ? 's' : ''} with ${milestonesCompleted} total milestone${milestonesCompleted === 1 ? '' : 's'} achieved. `;
+    }
+    if (missionsCompleted > 0) {
+      aiSummary += `You accomplished ${missionsCompleted} mission${missionsCompleted > 1 ? 's' : ''}, maintaining deliberate alignment between your long-term roadmap and day-to-day actions. `;
+    } else if (activeGoals > 0) {
+      aiSummary += `Tip: generating and locking in your daily missions will help translate your active goals into daily milestone progress. `;
+    }
+    if (habitsTracked > 0) {
+      aiSummary += `Habit consistency registered at ${habitCompletionRate}%. `;
+    }
+    if (avgDailySleepMinutes > 0) {
+      const sleepHours = (avgDailySleepMinutes / 60).toFixed(1);
+      aiSummary += `Sleep averaged ${sleepHours} hours per night. `;
+    }
+
+    const summary: IReportSummary = {
       tasksCreated,
       tasksCompleted,
       tasksCompletionRate,
@@ -173,7 +212,12 @@ export class ReportService {
       avgDailyScreenTimeMinutes,
       screenTimeGoalMinutes,
       daysUnderGoal,
+      missionsCompleted,
+      activeGoals,
+      milestonesCompleted,
     };
+
+    return { summary, aiSummary };
   }
 
   // ─── Public API ───────────────────────────────────────────────────────────────
@@ -217,13 +261,16 @@ export class ReportService {
           avgDailyScreenTimeMinutes: 0,
           screenTimeGoalMinutes: 120,
           daysUnderGoal: 0,
+          missionsCompleted: 0,
+          activeGoals: 0,
+          milestonesCompleted: 0,
         });
         return { report: existing || empty, hasData: false };
       }
     }
 
-    const summary = await this.aggregateSummary(userId, start, end);
-    const report = await this.reportRepo.upsertReport(userId, type, start, end, summary);
+    const { summary, aiSummary } = await this.aggregateSummary(userId, start, end, type);
+    const report = await this.reportRepo.upsertReport(userId, type, start, end, summary, aiSummary);
     return { report, hasData: true };
   }
 
@@ -240,6 +287,8 @@ export class ReportService {
       todayFocusSessions,
       weeklyFocusSessions,
       todayMoodLogs,
+      todayMission,
+      activeGoalsCount,
     ] = await Promise.all([
       Task.find({
         userId,
@@ -264,6 +313,8 @@ export class ReportService {
         completed: true,
       }).exec(),
       MoodLog.find({ userId, loggedAt: { $gte: todayStart, $lte: todayEnd } }).exec(),
+      DailyMission.findOne({ userId, date: { $gte: todayStart, $lte: todayEnd } }).exec(),
+      Goal.countDocuments({ userId, status: 'active' }).exec(),
     ]);
 
     const todayWaterMl = waterLogs.reduce((acc, l) => acc + l.amount, 0);
@@ -276,6 +327,18 @@ export class ReportService {
         : null;
 
     const currentStreak = habits.length > 0 ? Math.max(...habits.map((h) => h.currentStreak)) : 0;
+
+    const todayMissionStatus = todayMission
+      ? {
+          hasMission: true,
+          completed: todayMission.primaryMission?.completed || todayMission.status === 'completed',
+          title: todayMission.primaryMission?.title,
+          dayType: todayMission.dayType,
+        }
+      : {
+          hasMission: false,
+          completed: false,
+        };
 
     return {
       todayTasks: {
@@ -291,6 +354,8 @@ export class ReportService {
       weeklyFocusMinutes,
       todayMoodScore,
       currentStreak,
+      todayMissionStatus,
+      activeGoalsCount,
     };
   }
 }

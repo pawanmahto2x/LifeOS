@@ -11,6 +11,9 @@ import {
   Smartphone,
   BarChart3,
   AlertCircle,
+  Target,
+  Compass,
+  Sparkles,
 } from 'lucide-react';
 
 interface ReportSummaryCardProps {
@@ -76,14 +79,52 @@ export function ReportSummaryCard({ report, isLoading, hasData, type }: ReportSu
   return (
     <div className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm">
       <div className="border-border border-b px-5 py-4">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="text-muted-foreground h-4 w-4" />
-          <span className="text-foreground text-sm font-bold capitalize">{type} Report</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="text-muted-foreground h-4 w-4" />
+            <span className="text-foreground text-sm font-bold capitalize">{type} Report</span>
+          </div>
+          {report.aiSummary && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-violet-400">
+              <Sparkles className="h-3 w-3" />
+              AI Synthesized
+            </span>
+          )}
         </div>
         <p className="text-muted-foreground mt-0.5 text-xs">{periodLabel}</p>
       </div>
 
+      {report.aiSummary && (
+        <div className="border-border/60 bg-muted/30 border-b p-5">
+          <div className="mb-1.5 flex items-center gap-1.5 text-xs font-bold tracking-wider text-violet-400 uppercase">
+            <Sparkles className="h-3.5 w-3.5" />
+            AI Executive Summary
+          </div>
+          <p className="text-foreground/90 text-sm leading-relaxed">{report.aiSummary}</p>
+        </div>
+      )}
+
       <div className="divide-border divide-y px-5 py-1">
+        {s.missionsCompleted !== undefined && (
+          <StatRow
+            icon={Target}
+            color="text-indigo-400"
+            bg="bg-indigo-500/10"
+            label="Missions Completed"
+            value={`${s.missionsCompleted}`}
+            sub="Daily missions achieved"
+          />
+        )}
+        {s.activeGoals !== undefined && (
+          <StatRow
+            icon={Compass}
+            color="text-pink-400"
+            bg="bg-pink-500/10"
+            label="Strategic Goals & Milestones"
+            value={`${s.activeGoals} Active Goals`}
+            sub={`${s.milestonesCompleted || 0} total milestones achieved`}
+          />
+        )}
         <StatRow
           icon={CheckSquare}
           color="text-blue-400"

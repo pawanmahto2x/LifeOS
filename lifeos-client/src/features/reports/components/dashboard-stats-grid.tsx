@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { IDashboardSummary } from '@/types/report.types';
-import { CheckSquare, Repeat, Droplets, Flame, Trophy, Brain } from 'lucide-react';
+import { CheckSquare, Repeat, Droplets, Flame, Trophy, Brain, Target, Compass } from 'lucide-react';
 
 interface DashboardStatsGridProps {
   data?: IDashboardSummary;
@@ -24,6 +24,28 @@ const MOOD_LABELS: Record<number, string> = {
 
 export function DashboardStatsGrid({ data, isLoading }: DashboardStatsGridProps) {
   const stats = [
+    {
+      label: "Today's Mission",
+      icon: Target,
+      color: 'text-indigo-400',
+      bg: 'bg-indigo-500/10',
+      value: data?.todayMissionStatus?.hasMission
+        ? data.todayMissionStatus.completed
+          ? 'Completed'
+          : 'In Progress'
+        : 'Not Set',
+      sub: data?.todayMissionStatus?.hasMission
+        ? data.todayMissionStatus.title || 'Daily plan generated'
+        : 'Generate in Missions',
+    },
+    {
+      label: 'Strategic Goals',
+      icon: Compass,
+      color: 'text-pink-400',
+      bg: 'bg-pink-500/10',
+      value: data?.activeGoalsCount !== undefined ? `${data.activeGoalsCount} Active` : '0 Active',
+      sub: data?.activeGoalsCount ? 'Driving daily execution' : 'Create goals to align',
+    },
     {
       label: "Today's Tasks",
       icon: CheckSquare,
@@ -97,8 +119,8 @@ export function DashboardStatsGrid({ data, isLoading }: DashboardStatsGridProps)
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {[...Array(6)].map((_, i) => (
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-4">
+        {[...Array(8)].map((_, i) => (
           <div key={i} className="border-border bg-card h-28 animate-pulse rounded-2xl border" />
         ))}
       </div>
@@ -106,7 +128,7 @@ export function DashboardStatsGrid({ data, isLoading }: DashboardStatsGridProps)
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-4">
       {stats.map((s) => {
         const Icon = s.icon;
         return (

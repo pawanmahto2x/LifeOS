@@ -15,6 +15,9 @@ export interface IReportSummary {
   avgDailyScreenTimeMinutes: number;
   screenTimeGoalMinutes: number;
   daysUnderGoal: number;
+  missionsCompleted?: number;
+  activeGoals?: number;
+  milestonesCompleted?: number;
 }
 
 export interface IReport {
@@ -38,4 +41,11 @@ export interface IDashboardSummary {
   weeklyFocusMinutes: number;
   todayMoodScore: number | null;
   currentStreak: number;
+  todayMissionStatus?: {
+    hasMission: boolean;
+    completed: boolean;
+    title?: string;
+    dayType?: string;
+  };
+  activeGoalsCount?: number;
 }
