@@ -24,4 +24,20 @@ export const dailyMissionApiService = {
     });
     return response.data;
   },
+  async getWeeklyMissions() {
+    const response = await apiClient.get('/daily-mission/weekly');
+    return response.data;
+  },
+  async getCommunityMissions() {
+    const response = await apiClient.get('/daily-mission/community');
+    return response.data;
+  },
+  async toggleMissionItem(data: {
+    itemType: 'primary' | 'supporting';
+    index?: number;
+    completed: boolean;
+  }) {
+    const response = await apiClient.patch('/daily-mission/toggle', data);
+    return response.data;
+  },
 };

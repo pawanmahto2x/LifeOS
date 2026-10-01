@@ -65,4 +65,34 @@ export class DailyMissionController {
       next(error);
     }
   };
+
+  getWeeklyMissions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) throw new UnauthorizedError();
+      const result = await this.service.getWeeklyMissions(req.user.userId);
+      sendSuccess(res, result, 'Weekly missions fetched successfully.');
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getCommunityMissions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) throw new UnauthorizedError();
+      const result = await this.service.getCommunityMissions(req.user.userId);
+      sendSuccess(res, result, 'Community missions fetched successfully.');
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  toggleMissionItem = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) throw new UnauthorizedError();
+      const result = await this.service.toggleMissionItem(req.user.userId, req.body);
+      sendSuccess(res, result, 'Mission item updated successfully.');
+    } catch (error) {
+      next(error);
+    }
+  };
 }

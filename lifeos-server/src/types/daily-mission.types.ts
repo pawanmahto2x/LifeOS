@@ -3,9 +3,22 @@ export type MissionStatus = 'active' | 'completed' | 'expired';
 
 export interface ISupportingGoal {
   title: string;
-  type: 'habit' | 'focus' | 'health' | 'task';
+  type: 'habit' | 'focus' | 'health' | 'task' | 'milestone' | 'goal';
   targetValue?: string;
   completed: boolean;
+  goalId?: string;
+  goalTitle?: string;
+  category?: string;
+}
+
+export interface IPrimaryMission {
+  title: string;
+  taskId?: string;
+  goalId?: string;
+  goalTitle?: string;
+  category?: string;
+  reason: string;
+  completed?: boolean;
 }
 
 export interface IDailyReview {
@@ -27,11 +40,7 @@ export interface IDailyMission {
   userId: string;
   date: Date;
   dayType: DayType;
-  primaryMission: {
-    title: string;
-    taskId?: string;
-    reason: string;
-  };
+  primaryMission: IPrimaryMission;
   supportingGoals: ISupportingGoal[];
   personalReminder: string;
   avoidance: string;
@@ -44,6 +53,37 @@ export interface IDailyMission {
   status: MissionStatus;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface IWeeklyMissionItem {
+  id: string;
+  goalId: string;
+  goalTitle: string;
+  category: string;
+  milestoneTitle: string;
+  target: string;
+  completed: boolean;
+  progressPercent: number;
+}
+
+export interface ICommunityMissionItem {
+  id: string;
+  title: string;
+  description: string;
+  type: 'challenge' | 'group';
+  category: string;
+  target: string;
+  userProgress: number;
+  completed: boolean;
+  participantsCount: number;
+  referenceId: string;
+}
+
+export interface IToggleMissionItemInput {
+  missionId?: string;
+  itemType: 'primary' | 'supporting';
+  index?: number;
+  completed: boolean;
 }
 
 export interface IDailyMissionResponse {

@@ -7,9 +7,16 @@ export type DailyMissionModelType = Model<IDailyMissionDocument>;
 const supportingGoalSchema = new Schema(
   {
     title: { type: String, required: true },
-    type: { type: String, enum: ['habit', 'focus', 'health', 'task'], required: true },
+    type: {
+      type: String,
+      enum: ['habit', 'focus', 'health', 'task', 'milestone', 'goal'],
+      required: true,
+    },
     targetValue: { type: String },
     completed: { type: Boolean, default: false },
+    goalId: { type: Schema.Types.ObjectId, ref: 'Goal' },
+    goalTitle: { type: String },
+    category: { type: String },
   },
   { _id: false },
 );
@@ -18,7 +25,11 @@ const primaryMissionSchema = new Schema(
   {
     title: { type: String, required: true },
     taskId: { type: String },
+    goalId: { type: Schema.Types.ObjectId, ref: 'Goal' },
+    goalTitle: { type: String },
+    category: { type: String },
     reason: { type: String, required: true },
+    completed: { type: Boolean, default: false },
   },
   { _id: false },
 );

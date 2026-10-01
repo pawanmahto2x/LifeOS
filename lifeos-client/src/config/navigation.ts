@@ -44,7 +44,10 @@ export const navigationConfig: {
   groups: [
     {
       groupName: 'Strategy',
-      items: [{ title: 'Goals', href: '/goals', icon: Target }],
+      items: [
+        { title: 'Goals', href: '/goals', icon: Target },
+        { title: 'Missions', href: '/missions', icon: Target },
+      ],
     },
     {
       groupName: 'Productivity',
@@ -75,7 +78,6 @@ export const navigationConfig: {
       groupName: 'Intelligence',
       items: [
         { title: 'Insights', href: '/insights', icon: Brain },
-        { title: 'Daily Mission', href: '/daily-mission', icon: Target },
         { title: 'Life Replay', href: '/life-replay', icon: History },
         { title: 'Reports', href: '/reports', icon: BarChart3 },
         { title: 'AI Coach', href: '/ai-coach', icon: Bot },

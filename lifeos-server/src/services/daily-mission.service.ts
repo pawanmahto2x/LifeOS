@@ -5,7 +5,17 @@ import { HabitHistory } from '../models/habit-history.model';
 import { FocusSession } from '../models/focus-session.model';
 import { SleepLog } from '../models/sleep-log.model';
 import { MoodLog } from '../models/mood-log.model';
-import { DayType, ISupportingGoal, ISubmitReviewInput } from '../types/daily-mission.types';
+import { Goal } from '../models/goal.model';
+import { ChallengeParticipant } from '../models/challenge-participant.model';
+import { GroupMember } from '../models/group-member.model';
+import {
+  DayType,
+  ISupportingGoal,
+  ISubmitReviewInput,
+  IToggleMissionItemInput,
+  IWeeklyMissionItem,
+  ICommunityMissionItem,
+} from '../types/daily-mission.types';
 import { NotFoundError } from '../utils/errors';
 
 export class DailyMissionService {
@@ -103,15 +113,60 @@ export class DailyMissionService {
   async selectPrimaryMission(userId: string, dayType: DayType) {
     const priorityMap: Record<string, number> = { Urgent: 4, High: 3, Medium: 2, Low: 1 };
 
+    // 1. Check for active user goals
+    try {
+      const activeGoals = await Goal.find({ userId, status: 'active' }).exec();
+      if (activeGoals && activeGoals.length > 0) {
+        for (const goal of activeGoals) {
+          const nextMilestone = goal.milestones.find((m) => !m.completed);
+          if (nextMilestone) {
+            const goalTask = await Task.findOne({
+              userId,
+              status: { $ne: 'Completed' },
+              isDeleted: false,
+              $or: [
+                { category: { $regex: new RegExp(goal.category, 'i') } },
+                { title: { $regex: new RegExp(nextMilestone.title, 'i') } },
+              ],
+            }).exec();
+
+            if (goalTask) {
+              return {
+                title: goalTask.title,
+                taskId: goalTask._id.toString(),
+                goalId: goal._id.toString(),
+                goalTitle: goal.title,
+                category: goal.category,
+                reason: `Directly advances milestone "${nextMilestone.title}" for your goal: "${goal.title}".`,
+                completed: false,
+              };
+            }
+
+            return {
+              title: `Advance Milestone: ${nextMilestone.title}`,
+              goalId: goal._id.toString(),
+              goalTitle: goal.title,
+              category: goal.category,
+              reason: `Primary milestone target toward your goal: "${goal.title}".`,
+              completed: false,
+            };
+          }
+        }
+      }
+    } catch (err) {}
+
     const incompleteTasks = await Task.find({
       userId,
       status: { $ne: 'Completed' },
+      isDeleted: false,
     }).exec();
 
     if (!incompleteTasks || incompleteTasks.length === 0) {
       return {
-        title: 'Set your first goal for today',
-        reason: 'No open tasks found in your task list.',
+        title: 'Define your next strategic goal',
+        reason:
+          'No open tasks or active goals found. Set a goal in the Goals module to generate mission targets.',
+        completed: false,
       };
     }
 
@@ -146,63 +201,77 @@ export class DailyMissionService {
     return {
       title: selectedTask.title,
       taskId: selectedTask._id.toString(),
+      category: selectedTask.category || 'General',
       reason,
+      completed: false,
     };
   }
 
   async generateSupportingGoals(userId: string, dayType: DayType): Promise<ISupportingGoal[]> {
     const goals: ISupportingGoal[] = [];
+
+    // 1. Generate supporting missions from active goals
+    try {
+      const activeGoals = await Goal.find({ userId, status: 'active' }).exec();
+      if (activeGoals && activeGoals.length > 0) {
+        for (const g of activeGoals.slice(0, 3)) {
+          const nextMilestone = g.milestones.find((m) => !m.completed);
+          if (nextMilestone) {
+            const isHealth = g.category === 'health' || g.category === 'fitness';
+            const isFocus = g.category === 'career' || g.category === 'education';
+            goals.push({
+              title: `Milestone: ${nextMilestone.title}`,
+              type: isHealth ? 'health' : isFocus ? 'focus' : 'task',
+              targetValue: isHealth ? '1 session' : isFocus ? '45 min' : 'Key deliverable',
+              completed: false,
+              goalId: g._id.toString(),
+              goalTitle: g.title,
+              category: g.category,
+            });
+          }
+        }
+      }
+    } catch (err) {}
+
+    // 2. Active habits
     const activeHabits = await Habit.find({ userId, isPaused: false, isDeleted: false })
       .limit(3)
       .exec();
 
+    activeHabits.forEach((h: any) => {
+      goals.push({
+        title: h.title || (h as any).name || 'Habit Check-in',
+        type: 'habit',
+        targetValue: 'Daily',
+        completed: false,
+        category: 'Routine',
+      });
+    });
+
+    // 3. Hydration & wellness baseline
     if (dayType === 'recovery') {
-      if (activeHabits.length > 0) {
-        goals.push({
-          title: (activeHabits[0] as any).name || 'Habit',
-          type: 'habit',
-          completed: false,
-        });
-      }
       goals.push({
-        title: 'Hydrate adequately',
+        title: 'Restorative hydration & recovery',
         type: 'health',
         targetValue: '2L water',
         completed: false,
-      });
-    } else if (dayType === 'normal') {
-      goals.push({
-        title: 'Focus block',
-        type: 'focus',
-        targetValue: '45 minutes',
-        completed: false,
-      });
-      activeHabits
-        .slice(0, 2)
-        .forEach((h: any) =>
-          goals.push({ title: h.name || 'Habit', type: 'habit', completed: false }),
-        );
-      goals.push({
-        title: 'Stay hydrated',
-        type: 'health',
-        targetValue: '2L water',
-        completed: false,
+        category: 'Wellness',
       });
     } else if (dayType === 'high-focus') {
       goals.push({
-        title: 'Deep Work Session',
+        title: 'Deep Focus Block',
         type: 'focus',
         targetValue: '90 minutes',
         completed: false,
+        category: 'Productivity',
       });
-      activeHabits.forEach((h: any) =>
-        goals.push({ title: h.name || 'Habit', type: 'habit', completed: false }),
-      );
+    } else {
       goals.push({
-        title: 'Optimal hydration',
+        title: 'Daily hydration baseline',
         type: 'health',
-        targetValue: '3L water',
+        targetValue: '2L water',
         completed: false,
+        category: 'Wellness',
       });
     }
 
@@ -335,5 +404,98 @@ export class DailyMissionService {
 
   async getMissionHistory(userId: string, limit: number) {
     return this.repo.findHistory(userId, limit);
+  }
+
+  async getWeeklyMissions(userId: string): Promise<IWeeklyMissionItem[]> {
+    const goals = await Goal.find({ userId, status: 'active' }).exec();
+    const missions: IWeeklyMissionItem[] = [];
+
+    for (const goal of goals) {
+      const milestoneIndex = goal.milestones.findIndex((m: any) => !m.completed);
+      if (milestoneIndex !== -1) {
+        const milestone = goal.milestones[milestoneIndex];
+        missions.push({
+          id: `${goal._id.toString()}_${milestoneIndex}`,
+          goalId: goal._id.toString(),
+          goalTitle: goal.title,
+          category: goal.category,
+          milestoneTitle: milestone.title,
+          target: milestone.title,
+          completed: milestone.completed,
+          progressPercent: goal.progress || 0,
+        });
+      }
+      if (missions.length >= 5) break;
+    }
+
+    return missions;
+  }
+
+  async getCommunityMissions(userId: string): Promise<ICommunityMissionItem[]> {
+    const missions: ICommunityMissionItem[] = [];
+
+    const participants = await ChallengeParticipant.find({ userId }).populate('challengeId').exec();
+    for (const p of participants) {
+      const challenge = p.challengeId as any;
+      if (challenge) {
+        missions.push({
+          id: `challenge_${challenge._id.toString()}`,
+          type: 'challenge',
+          title: challenge.title,
+          description: challenge.description || 'Participate in the challenge',
+          category: challenge.category || 'General',
+          target: challenge.goal || 'Complete challenge',
+          completed: p.completed,
+          userProgress: p.progress || 0,
+          participantsCount: challenge.participantsCount || 0,
+          referenceId: challenge._id.toString(),
+        });
+        if (missions.length >= 5) break;
+      }
+    }
+
+    if (missions.length < 5) {
+      const groupMembers = await GroupMember.find({ userId }).populate('groupId').exec();
+      for (const m of groupMembers) {
+        const group = m.groupId as any;
+        if (group) {
+          missions.push({
+            id: `group_${group._id.toString()}`,
+            type: 'group',
+            title: `Stay active in ${group.name}`,
+            description: 'Check in with your group',
+            category: 'Community',
+            target: '1 check-in',
+            completed: false,
+            userProgress: 0,
+            participantsCount: group.membersCount || 0,
+            referenceId: group._id.toString(),
+          });
+          if (missions.length >= 5) break;
+        }
+      }
+    }
+
+    return missions.slice(0, 5);
+  }
+
+  async toggleMissionItem(userId: string, input: IToggleMissionItemInput): Promise<any> {
+    const mission = await this.repo.findToday(userId);
+    if (!mission) throw new NotFoundError('No mission generated for today.');
+
+    if (input.itemType === 'primary' && mission.primaryMission) {
+      mission.primaryMission.completed = input.completed;
+    } else if (
+      input.itemType === 'supporting' &&
+      mission.supportingGoals &&
+      input.index !== undefined
+    ) {
+      if (mission.supportingGoals[input.index]) {
+        mission.supportingGoals[input.index].completed = input.completed;
+      }
+    }
+
+    await mission.save();
+    return mission;
   }
 }

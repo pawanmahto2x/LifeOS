@@ -52,3 +52,27 @@ export interface ISubmitReviewInput {
   moodReflection?: string;
   tomorrowChange?: string;
 }
+
+export interface IWeeklyMissionItem {
+  id: string;
+  goalId: string;
+  goalTitle: string;
+  category: string;
+  milestoneTitle: string;
+  target: string;
+  completed: boolean;
+  progressPercent: number;
+}
+
+export interface ICommunityMissionItem {
+  id: string;
+  title: string;
+  description: string;
+  type: 'challenge' | 'group';
+  category: string;
+  target: string;
+  userProgress: number;
+  completed: boolean;
+  participantsCount: number;
+  referenceId: string;
+}
