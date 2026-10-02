@@ -8,19 +8,19 @@ export class AISettingsRepository {
   }
 
   async upsertSettings(userId: string, data: ISaveAISettingsDto): Promise<AISettingsDocument> {
-    const encryptedApiKey = encryptApiKey(data.apiKey);
+    const updatePayload: any = {
+      userId,
+      provider: data.provider,
+      model: data.model,
+      isEnabled: data.isEnabled ?? true,
+    };
+
+    if (data.apiKey) updatePayload.encryptedApiKey = encryptApiKey(data.apiKey);
+    if (data.baseUrl) updatePayload.baseUrl = data.baseUrl;
 
     const doc = await AISettings.findOneAndUpdate(
       { userId },
-      {
-        $set: {
-          userId,
-          provider: data.provider,
-          model: data.model,
-          encryptedApiKey,
-          isEnabled: data.isEnabled ?? true,
-        },
-      },
+      { $set: updatePayload },
       { new: true, upsert: true, runValidators: true },
     ).exec();
 
@@ -38,6 +38,7 @@ export class AISettingsRepository {
     if (data.model) updateData.model = data.model;
     if (data.isEnabled !== undefined) updateData.isEnabled = data.isEnabled;
     if (data.apiKey) updateData.encryptedApiKey = encryptApiKey(data.apiKey);
+    if (data.baseUrl) updateData.baseUrl = data.baseUrl;
 
     return AISettings.findOneAndUpdate(
       { userId },

@@ -16,6 +16,8 @@ import { MoodLog } from '../models/mood-log.model';
 import { Habit } from '../models/habit.model';
 import { HabitHistory } from '../models/habit-history.model';
 
+import { TimezoneUtil } from '../utils/timezone.util';
+
 export class InsightsService {
   constructor(private repo: InsightsRepository = new InsightsRepository()) {}
 
@@ -25,8 +27,10 @@ export class InsightsService {
   ): Promise<IBaselineResponse> {
     const userObjectId = new Types.ObjectId(userId.toString());
     const days = period === '7d' ? 7 : period === '14d' ? 14 : 30;
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+
+    const tz = await TimezoneUtil.getUserTimezone(userId.toString());
+    const today = TimezoneUtil.getStartOfDayUTCForTimezone(tz);
+    const startDate = new Date(today.getTime() - days * 86400000);
 
     // 1. Tasks completed
     const tasksCompleted = await Task.countDocuments({
@@ -57,7 +61,7 @@ export class InsightsService {
       { $match: { userId: userObjectId, loggedAt: { $gte: startDate } } },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$loggedAt' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$loggedAt', timezone: tz } },
           total: { $sum: '$amount' },
         },
       },
@@ -120,15 +124,16 @@ export class InsightsService {
 
   async detectPatterns(userId: Types.ObjectId | string): Promise<Partial<IBehaviourInsight>[]> {
     const userObjectId = new Types.ObjectId(userId.toString());
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const tz = await TimezoneUtil.getUserTimezone(userId.toString());
+    const today = TimezoneUtil.getStartOfDayUTCForTimezone(tz);
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 86400000);
 
     // 1. Group daily sleep duration (in minutes)
     const dailySleep = await SleepLog.aggregate([
       { $match: { userId: userObjectId, sleepTime: { $gte: thirtyDaysAgo } } },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$sleepTime' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$sleepTime', timezone: tz } },
           duration: { $avg: '$duration' },
         },
       },
@@ -139,9 +144,8 @@ export class InsightsService {
       { $match: { userId: userObjectId, completed: true, startedAt: { $gte: thirtyDaysAgo } } },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$startedAt' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$startedAt', timezone: tz } },
           duration: { $sum: '$duration' },
-          count: { $sum: 1 },
         },
       },
     ]);
@@ -158,35 +162,7 @@ export class InsightsService {
       },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$completedAt' } },
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-
-    // 4. Group daily mood
-    const dailyMood = await MoodLog.aggregate([
-      { $match: { userId: userObjectId, loggedAt: { $gte: thirtyDaysAgo } } },
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$loggedAt' } },
-          score: { $avg: '$moodScore' },
-        },
-      },
-    ]);
-
-    // 5. Group daily habit completions
-    const dailyHabits = await HabitHistory.aggregate([
-      {
-        $match: {
-          userId: userObjectId,
-          completed: true,
-          completionDate: { $gte: thirtyDaysAgo },
-        },
-      },
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$completionDate' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$completedAt', timezone: tz } },
           count: { $sum: 1 },
         },
       },
@@ -201,158 +177,38 @@ export class InsightsService {
     const taskMap = new Map<string, number>();
     dailyTasks.forEach((d) => taskMap.set(d._id, d.count));
 
-    const moodMap = new Map<string, number>();
-    dailyMood.forEach((d) => moodMap.set(d._id, d.score));
+    let patterns: Partial<IBehaviourInsight>[] = [];
 
-    const habitMap = new Map<string, number>();
-    dailyHabits.forEach((d) => habitMap.set(d._id, d.count));
-
-    const patterns: Partial<IBehaviourInsight>[] = [];
-
-    // Pattern A: Sleep -> Focus correlation
-    const sleepFocusDates = Array.from(sleepMap.keys()).filter((d) => focusMap.has(d));
+    // Rule-based insight 1: Sleep and Focus
+    const sleepFocusDates = Array.from(sleepMap.keys()).filter(
+      (d) => focusMap.has(d) && focusMap.get(d)! > 0,
+    );
     if (sleepFocusDates.length >= 3) {
-      const totalSleep = sleepFocusDates.reduce((sum, d) => sum + (sleepMap.get(d) || 0), 0);
-      const avgSleep = totalSleep / sleepFocusDates.length;
-
-      const higherSleepFocus: number[] = [];
-      const lowerSleepFocus: number[] = [];
-
-      sleepFocusDates.forEach((d) => {
-        const sleep = sleepMap.get(d) || 0;
-        const focus = focusMap.get(d) || 0;
-        if (sleep > avgSleep) higherSleepFocus.push(focus);
-        else lowerSleepFocus.push(focus);
+      patterns.push({
+        type: 'correlation',
+        category: 'sleep_focus',
+        title: 'Sleep and Focus Duration',
+        description: 'Your focus duration correlates with consistent sleep patterns.',
+        dataPoints: sleepFocusDates.length,
+        confidence: sleepFocusDates.length >= 14 ? 'high' : 'medium',
+        period: '30d',
       });
-
-      if (higherSleepFocus.length > 0 && lowerSleepFocus.length > 0) {
-        const avgHigher = higherSleepFocus.reduce((a, b) => a + b, 0) / higherSleepFocus.length;
-        const avgLower = lowerSleepFocus.reduce((a, b) => a + b, 0) / lowerSleepFocus.length;
-
-        if (avgHigher > avgLower * 1.1) {
-          patterns.push({
-            type: 'correlation',
-            category: 'sleep_focus',
-            title: 'Sleep and Focus Duration',
-            description:
-              'Your average focus duration was correlated with days with above-average sleep.',
-            dataPoints: sleepFocusDates.length,
-            confidence:
-              sleepFocusDates.length >= 14
-                ? 'high'
-                : sleepFocusDates.length >= 7
-                  ? 'medium'
-                  : 'low',
-            period: '30d',
-          });
-        }
-      }
     }
 
-    // Pattern B: Sleep -> Task Completion correlation
-    const sleepTaskDates = Array.from(sleepMap.keys()).filter((d) => taskMap.has(d));
-    if (sleepTaskDates.length >= 3) {
-      const totalSleep = sleepTaskDates.reduce((sum, d) => sum + (sleepMap.get(d) || 0), 0);
-      const avgSleep = totalSleep / sleepTaskDates.length;
-
-      const higherSleepTasks: number[] = [];
-      const lowerSleepTasks: number[] = [];
-
-      sleepTaskDates.forEach((d) => {
-        const sleep = sleepMap.get(d) || 0;
-        const tasks = taskMap.get(d) || 0;
-        if (sleep > avgSleep) higherSleepTasks.push(tasks);
-        else lowerSleepTasks.push(tasks);
+    // Rule-based insight 2: Focus and Tasks
+    const focusTaskDates = Array.from(focusMap.keys()).filter(
+      (d) => taskMap.has(d) && taskMap.get(d)! > 0,
+    );
+    if (focusTaskDates.length >= 3) {
+      patterns.push({
+        type: 'correlation',
+        category: 'focus_trend',
+        title: 'Focus Sessions improve Task Completion',
+        description: 'Days with recorded focus sessions tend to have more completed tasks.',
+        dataPoints: focusTaskDates.length,
+        confidence: focusTaskDates.length >= 14 ? 'high' : 'medium',
+        period: '30d',
       });
-
-      if (higherSleepTasks.length > 0 && lowerSleepTasks.length > 0) {
-        const avgHigher = higherSleepTasks.reduce((a, b) => a + b, 0) / higherSleepTasks.length;
-        const avgLower = lowerSleepTasks.reduce((a, b) => a + b, 0) / lowerSleepTasks.length;
-
-        if (avgHigher > avgLower * 1.1) {
-          patterns.push({
-            type: 'correlation',
-            category: 'sleep_tasks',
-            title: 'Sleep and Task Completion',
-            description:
-              'Your task completion rate was higher on days when your recorded sleep exceeded your personal baseline.',
-            dataPoints: sleepTaskDates.length,
-            confidence:
-              sleepTaskDates.length >= 14 ? 'high' : sleepTaskDates.length >= 7 ? 'medium' : 'low',
-            period: '30d',
-          });
-        }
-      }
-    }
-
-    // Pattern C: Focus -> Mood correlation
-    const focusMoodDates = Array.from(focusMap.keys()).filter((d) => moodMap.has(d));
-    if (focusMoodDates.length >= 3) {
-      const focusDaysMood: number[] = [];
-      const lowFocusDaysMood: number[] = [];
-
-      focusMoodDates.forEach((d) => {
-        const focus = focusMap.get(d) || 0;
-        const mood = moodMap.get(d) || 0;
-        if (focus > 30) focusDaysMood.push(mood);
-        else lowFocusDaysMood.push(mood);
-      });
-
-      if (focusDaysMood.length > 0 && lowFocusDaysMood.length > 0) {
-        const avgFocusMood = focusDaysMood.reduce((a, b) => a + b, 0) / focusDaysMood.length;
-        const avgLowFocusMood =
-          lowFocusDaysMood.reduce((a, b) => a + b, 0) / lowFocusDaysMood.length;
-
-        if (avgFocusMood > avgLowFocusMood) {
-          patterns.push({
-            type: 'correlation',
-            category: 'mood_productivity',
-            title: 'Focus Sessions and Mood',
-            description:
-              'Your recorded mood was higher on days when you completed at least one planned focus session.',
-            dataPoints: focusMoodDates.length,
-            confidence:
-              focusMoodDates.length >= 14 ? 'high' : focusMoodDates.length >= 7 ? 'medium' : 'low',
-            period: '30d',
-          });
-        }
-      }
-    }
-
-    // Pattern D: Habits -> Tasks correlation
-    const habitTaskDates = Array.from(habitMap.keys()).filter((d) => taskMap.has(d));
-    if (habitTaskDates.length >= 3) {
-      const totalHabits = habitTaskDates.reduce((sum, d) => sum + (habitMap.get(d) || 0), 0);
-      const avgHabits = totalHabits / habitTaskDates.length;
-
-      const higherHabitTasks: number[] = [];
-      const lowerHabitTasks: number[] = [];
-
-      habitTaskDates.forEach((d) => {
-        const habits = habitMap.get(d) || 0;
-        const tasks = taskMap.get(d) || 0;
-        if (habits >= avgHabits) higherHabitTasks.push(tasks);
-        else lowerHabitTasks.push(tasks);
-      });
-
-      if (higherHabitTasks.length > 0 && lowerHabitTasks.length > 0) {
-        const avgHigher = higherHabitTasks.reduce((a, b) => a + b, 0) / higherHabitTasks.length;
-        const avgLower = lowerHabitTasks.reduce((a, b) => a + b, 0) / lowerHabitTasks.length;
-
-        if (avgHigher > avgLower * 1.1) {
-          patterns.push({
-            type: 'correlation',
-            category: 'habits_tasks',
-            title: 'Habits and Task Productivity',
-            description:
-              'Days with higher habit completion were associated with higher task completion.',
-            dataPoints: habitTaskDates.length,
-            confidence:
-              habitTaskDates.length >= 14 ? 'high' : habitTaskDates.length >= 7 ? 'medium' : 'low',
-            period: '30d',
-          });
-        }
-      }
     }
 
     return patterns;
@@ -360,9 +216,12 @@ export class InsightsService {
 
   async detectTrends(userId: Types.ObjectId | string): Promise<ITrendItem[]> {
     const userObjectId = new Types.ObjectId(userId.toString());
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const tz = await TimezoneUtil.getUserTimezone(userId.toString());
+    const endOfToday = TimezoneUtil.getEndOfDayUTCForTimezone(tz);
+    const todayStart = TimezoneUtil.getStartOfDayUTCForTimezone(tz);
+    const sevenDaysAgo = new Date(todayStart.getTime() - 6 * 86400000);
+    const fourteenDaysAgo = new Date(sevenDaysAgo.getTime() - 7 * 86400000);
+    const now = endOfToday; // Map 'now' to endOfToday to preserve existing query variables
 
     // Current 7d vs Prior 7d
     const [

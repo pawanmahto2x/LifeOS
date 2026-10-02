@@ -2,6 +2,8 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import compression from 'compression';
+import hpp from 'hpp';
 import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 import { standardLimiter } from './middleware/rateLimiter';
@@ -29,6 +31,12 @@ app.use(standardLimiter);
 // Request parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Prevent HTTP Parameter Pollution
+app.use(hpp());
+
+// Compression
+app.use(compression());
 
 // Request logging
 if (env.NODE_ENV !== 'test') {

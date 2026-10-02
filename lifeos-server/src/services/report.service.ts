@@ -12,6 +12,7 @@ import { Goal } from '../models/goal.model';
 import { ReportRepository } from '../repositories/report.repository';
 import { ReportDocument } from '../models/report.model';
 import { ReportType, IReportSummary, IDashboardSummary } from '../types/report.types';
+import { TimezoneUtil } from '../utils/timezone.util';
 
 export class ReportService {
   private reportRepo: ReportRepository;
@@ -22,46 +23,30 @@ export class ReportService {
 
   // ─── Period Helpers ──────────────────────────────────────────────────────────
 
-  private getDailyRange(ref: Date): { start: Date; end: Date } {
-    const start = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 0, 0, 0, 0);
-    const end = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 23, 59, 59, 999);
-    return { start, end };
-  }
+  private getRange(tz: string, type: ReportType, ref: Date): { start: Date; end: Date } {
+    const todayStart = TimezoneUtil.getStartOfDayUTCForTimezone(tz, ref);
 
-  private getWeeklyRange(ref: Date): { start: Date; end: Date } {
-    const day = ref.getDay(); // 0 = Sunday
-    const diffToMonday = day === 0 ? -6 : 1 - day;
-    const monday = new Date(ref);
-    monday.setDate(ref.getDate() + diffToMonday);
-    const start = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate(), 0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-    return { start, end };
-  }
-
-  private getMonthlyRange(ref: Date): { start: Date; end: Date } {
-    const start = new Date(ref.getFullYear(), ref.getMonth(), 1, 0, 0, 0, 0);
-    const end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999);
-    return { start, end };
-  }
-
-  private getYearlyRange(ref: Date): { start: Date; end: Date } {
-    const start = new Date(ref.getFullYear(), 0, 1, 0, 0, 0, 0);
-    const end = new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999);
-    return { start, end };
-  }
-
-  private getRange(type: ReportType, ref: Date): { start: Date; end: Date } {
     switch (type) {
       case 'daily':
-        return this.getDailyRange(ref);
-      case 'weekly':
-        return this.getWeeklyRange(ref);
+        return {
+          start: todayStart,
+          end: TimezoneUtil.getEndOfDayUTCForTimezone(tz, ref),
+        };
+      case 'weekly': {
+        const start = TimezoneUtil.getStartOfWeekForTimezone(todayStart);
+        const end = new Date(start.getTime() + 7 * 86400000 - 1);
+        return { start, end };
+      }
       case 'monthly':
-        return this.getMonthlyRange(ref);
+        return {
+          start: TimezoneUtil.getStartOfMonthForTimezone(todayStart),
+          end: TimezoneUtil.getEndOfMonthForTimezone(todayStart),
+        };
       case 'yearly':
-        return this.getYearlyRange(ref);
+        return {
+          start: TimezoneUtil.getStartOfYearForTimezone(todayStart),
+          end: TimezoneUtil.getEndOfYearForTimezone(todayStart),
+        };
     }
   }
 
@@ -179,24 +164,6 @@ export class ReportService {
       0,
     );
 
-    // AI Summary Synthesis
-    let aiSummary = `During this ${type} period, you completed ${tasksCompleted} of ${tasksCreated} planned tasks (${tasksCompletionRate}%) and logged ${totalFocusMinutes} minutes of focused deep work. `;
-    if (activeGoals > 0) {
-      aiSummary += `You are advancing ${activeGoals} active strategic goal${activeGoals > 1 ? 's' : ''} with ${milestonesCompleted} total milestone${milestonesCompleted === 1 ? '' : 's'} achieved. `;
-    }
-    if (missionsCompleted > 0) {
-      aiSummary += `You accomplished ${missionsCompleted} mission${missionsCompleted > 1 ? 's' : ''}, maintaining deliberate alignment between your long-term roadmap and day-to-day actions. `;
-    } else if (activeGoals > 0) {
-      aiSummary += `Tip: generating and locking in your daily missions will help translate your active goals into daily milestone progress. `;
-    }
-    if (habitsTracked > 0) {
-      aiSummary += `Habit consistency registered at ${habitCompletionRate}%. `;
-    }
-    if (avgDailySleepMinutes > 0) {
-      const sleepHours = (avgDailySleepMinutes / 60).toFixed(1);
-      aiSummary += `Sleep averaged ${sleepHours} hours per night. `;
-    }
-
     const summary: IReportSummary = {
       tasksCreated,
       tasksCompleted,
@@ -217,6 +184,26 @@ export class ReportService {
       milestonesCompleted,
     };
 
+    let aiSummary = '';
+
+    // Deterministic factual summary
+    aiSummary = `During this ${type} period, you completed ${tasksCompleted} of ${tasksCreated} planned tasks (${tasksCompletionRate}%) and logged ${totalFocusMinutes} minutes of focused deep work. `;
+    if (activeGoals > 0) {
+      aiSummary += `You are advancing ${activeGoals} active strategic goal${activeGoals > 1 ? 's' : ''} with ${milestonesCompleted} total milestone${milestonesCompleted === 1 ? '' : 's'} achieved. `;
+    }
+    if (missionsCompleted > 0) {
+      aiSummary += `You accomplished ${missionsCompleted} mission${missionsCompleted > 1 ? 's' : ''}, maintaining deliberate alignment between your long-term roadmap and day-to-day actions. `;
+    } else if (activeGoals > 0) {
+      aiSummary += `Tip: generating and locking in your daily missions will help translate your active goals into daily milestone progress. `;
+    }
+    if (habitsTracked > 0) {
+      aiSummary += `Habit consistency registered at ${habitCompletionRate}%. `;
+    }
+    if (avgDailySleepMinutes > 0) {
+      const sleepHours = (avgDailySleepMinutes / 60).toFixed(1);
+      aiSummary += `Sleep averaged ${sleepHours} hours per night. `;
+    }
+
     return { summary, aiSummary };
   }
 
@@ -227,7 +214,8 @@ export class ReportService {
     type: ReportType,
     refDate: Date = new Date(),
   ): Promise<{ report: ReportDocument; hasData: boolean }> {
-    const { start, end } = this.getRange(type, refDate);
+    const tz = await TimezoneUtil.getUserTimezone(userId);
+    const { start, end } = this.getRange(tz, type, refDate);
 
     // Check if enough activity exists before generating
     const minDays = this.getMinDays(type);
@@ -275,14 +263,18 @@ export class ReportService {
   }
 
   async getDashboardSummary(userId: string): Promise<IDashboardSummary> {
-    const now = new Date();
-    const { start: todayStart, end: todayEnd } = this.getDailyRange(now);
-    const { start: weekStart } = this.getWeeklyRange(now);
+    const tz = await TimezoneUtil.getUserTimezone(userId);
+    const todayStart = TimezoneUtil.getStartOfDayUTCForTimezone(tz);
+    const todayEnd = TimezoneUtil.getEndOfDayUTCForTimezone(tz);
+    const weekStart = TimezoneUtil.getStartOfWeekForTimezone(todayStart);
+
+    const habitService = new (require('./habit.service').HabitService)();
+    const taskRepo = new (require('../repositories/task.repository').TaskRepository)();
 
     const [
-      todayTasks,
-      habits,
-      todayHabitHistories,
+      activeTasksResult,
+      completedTodayTasks,
+      habitsResult,
       waterLogs,
       todayFocusSessions,
       weeklyFocusSessions,
@@ -290,17 +282,17 @@ export class ReportService {
       todayMission,
       activeGoalsCount,
     ] = await Promise.all([
+      // Pending tasks across all time
+      taskRepo.findByUser({ userId, status: 'Pending', limit: 100 }),
+      // Tasks completed today
       Task.find({
         userId,
+        status: 'Completed',
         isDeleted: false,
-        createdAt: { $gte: todayStart, $lte: todayEnd },
+        completedAt: { $gte: todayStart, $lte: todayEnd },
       }).exec(),
-      Habit.find({ userId, isDeleted: false, isPaused: false }).exec(),
-      HabitHistory.find({
-        userId,
-        completionDate: { $gte: todayStart, $lte: todayEnd },
-        completed: true,
-      }).exec(),
+      // Habits with full completion state logic
+      habitService.getHabits(userId, { limit: 100, isPaused: 'false' }),
       WaterLog.find({ userId, loggedAt: { $gte: todayStart, $lte: todayEnd } }).exec(),
       FocusSession.find({
         userId,
@@ -317,16 +309,22 @@ export class ReportService {
       Goal.countDocuments({ userId, status: 'active' }).exec(),
     ]);
 
+    const activeTasksCount = activeTasksResult.total;
+    const completedTasksCount = completedTodayTasks.length;
+    const todayTasksTotal = activeTasksCount + completedTasksCount;
+
+    const habits = habitsResult.habits;
+    const completedHabitsCount = habits.filter((h: any) => h.isCompletedToday).length;
+
     const todayWaterMl = waterLogs.reduce((acc, l) => acc + l.amount, 0);
     const todayFocusMinutes = todayFocusSessions.reduce((acc, s) => acc + (s.duration || 0), 0);
     const weeklyFocusMinutes = weeklyFocusSessions.reduce((acc, s) => acc + (s.duration || 0), 0);
 
     const todayMoodScore =
-      todayMoodLogs.length > 0
-        ? todayMoodLogs[todayMoodLogs.length - 1].moodScore // most recent mood today
-        : null;
+      todayMoodLogs.length > 0 ? todayMoodLogs[todayMoodLogs.length - 1].moodScore : null;
 
-    const currentStreak = habits.length > 0 ? Math.max(...habits.map((h) => h.currentStreak)) : 0;
+    const currentStreak =
+      habits.length > 0 ? Math.max(...habits.map((h: any) => h.currentStreak || 0)) : 0;
 
     const todayMissionStatus = todayMission
       ? {
@@ -342,12 +340,12 @@ export class ReportService {
 
     return {
       todayTasks: {
-        total: todayTasks.length,
-        completed: todayTasks.filter((t) => t.status === 'Completed').length,
+        total: todayTasksTotal,
+        completed: completedTasksCount,
       },
       todayHabits: {
         total: habits.length,
-        completed: todayHabitHistories.length,
+        completed: completedHabitsCount,
       },
       todayWaterMl,
       todayFocusMinutes,

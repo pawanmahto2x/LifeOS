@@ -17,6 +17,17 @@ import {
   IAIHealthAnalysisResponse,
 } from '../types/ai.types';
 import { BadRequestError, NotFoundError } from '../utils/errors';
+import { ProviderFactory } from '../ai/provider.factory';
+import {
+  buildAICoachPrompt,
+  buildWeeklyReportPrompt,
+  buildHealthAnalysisPrompt,
+} from '../ai/prompts/ai-coach.prompt';
+import {
+  aiCoachSchema,
+  aiWeeklyReportSchema,
+  aiHealthAnalysisSchema,
+} from '../ai/schemas/ai-coach.schema';
 
 export class AIService {
   private repo: AISettingsRepository;
@@ -74,6 +85,7 @@ export class AIService {
 
   // ─── AI Analytics & Coaching (Zero Fake Data) ───────────────────────────────
 
+  // LEGACY RULE-BASED IMPLEMENTATION: This currently uses threshold logic and is NOT genuine LLM output. Will be replaced in future phases.
   async generateWeeklyAIReport(userId: string): Promise<IWeeklyAIReportResponse> {
     const settings = await this.repo.findByUserId(userId);
     if (!settings || !settings.isEnabled) {
@@ -98,48 +110,32 @@ export class AIService {
     const totalWaterMl = waterLogs.reduce((acc, l) => acc + l.amount, 0);
     const dailyWaterAvg = Math.round(totalWaterMl / 7);
 
-    // Formulate evidence-based insights strictly from real database records
-    const strengths: string[] = [];
-    const weaknesses: string[] = [];
-    const suggestions: string[] = [];
-
-    if (tasksCompleted > 0) {
-      strengths.push(`Completed ${tasksCompleted} tasks over the past 7 days.`);
-    } else {
-      weaknesses.push('No tasks completed this week.');
-      suggestions.push('Break down large goals into bite-sized actionable tasks.');
-    }
-
-    if (focusMinutes >= 60) {
-      strengths.push(`Dedicated ${focusMinutes} total minutes to deep focus sessions.`);
-    } else {
-      weaknesses.push('Deep focus time was minimal (< 1 hour).');
-      suggestions.push('Schedule at least one 25-minute Pomodoro session each morning.');
-    }
-
-    if (dailyWaterAvg >= 2000) {
-      strengths.push(`Hydration is excellent, averaging ${dailyWaterAvg} ml daily.`);
-    } else {
-      suggestions.push(
-        `Increase hydration: you averaged ${dailyWaterAvg} ml/day vs the 2000 ml target.`,
-      );
-    }
-
-    if (habitHistories.length > 0) {
-      strengths.push(
-        `Recorded ${habitHistories.length} habit check-ins across ${habits.length} habits.`,
-      );
-    }
-
-    const weeklySummary = `Over the past week, you completed ${tasksCompleted} tasks, invested ${focusMinutes} minutes into deep work, and maintained check-ins across ${habits.length} habits.`;
-
-    return {
-      strengths,
-      weaknesses,
-      suggestions,
-      weeklySummary,
-      generatedAt: new Date().toISOString(),
+    const stats = {
+      tasksCompleted,
+      focusMinutes,
+      dailyWaterAvg,
+      habitCheckins: habitHistories.length,
+      activeHabits: habits.length,
     };
+
+    try {
+      const providerFactory = new ProviderFactory();
+      const provider = await providerFactory.getProvider(userId);
+      const { systemPrompt, userPrompt } = buildWeeklyReportPrompt(stats);
+
+      const response = await provider.generateStructured(userPrompt, systemPrompt);
+      const parsed = aiWeeklyReportSchema.parse(response);
+      return { ...parsed, generatedAt: new Date().toISOString() };
+    } catch (error) {
+      console.warn(`[LifeOS] Failed to generate AI weekly report:`, error);
+      return {
+        strengths: [`Completed ${tasksCompleted} tasks.`],
+        weaknesses: ['AI generation failed.'],
+        suggestions: ['Check your API key.'],
+        weeklySummary: `Over the past week, you completed ${tasksCompleted} tasks, invested ${focusMinutes} minutes into deep work, and maintained check-ins across ${habits.length} habits.`,
+        generatedAt: new Date().toISOString(),
+      };
+    }
   }
 
   async askAICoach(userId: string, question: string): Promise<IAICoachResponse> {
@@ -203,10 +199,21 @@ export class AIService {
       fact = parts.join(' ');
     }
 
-    const inference = `This may be associated with your progress regarding "${question}".`;
-    const recommendation = `You could try scheduling your most important task during your usual high-focus period.`;
+    let answer = '';
+    try {
+      const providerFactory = new ProviderFactory();
+      const provider = await providerFactory.getProvider(userId);
+      const { systemPrompt, userPrompt } = buildAICoachPrompt(question, contextSummary, fact);
 
-    const answer = `FACT:\n"${fact}"\n\nINFERENCE:\n"${inference}"\n\nRECOMMENDATION:\n"${recommendation}"`;
+      const response = await provider.generateStructured(userPrompt, systemPrompt);
+      const parsed = aiCoachSchema.parse(response);
+      answer = parsed.answer;
+    } catch (error) {
+      console.warn(`[LifeOS] Failed to generate AI coach response:`, error);
+      const inference = `This may be associated with your progress regarding "${question}".`;
+      const recommendation = `You could try scheduling your most important task during your usual high-focus period.`;
+      answer = `FACT:\n"${fact}"\n\nINFERENCE:\n"${inference}"\n\nRECOMMENDATION:\n"${recommendation}"\n\n(AI generation failed, fallback text shown)`;
+    }
 
     return {
       answer,
@@ -231,40 +238,51 @@ export class AIService {
       MoodLog.find({ userId, loggedAt: { $gte: twoWeeksAgo } }).exec(),
     ]);
 
-    if (sleepLogs.length === 0 && waterLogs.length === 0 && moodLogs.length === 0) {
-      throw new BadRequestError(
-        'Insufficient health data logged over the past 14 days to perform analysis.',
-      );
-    }
-
     const avgSleepMins =
       sleepLogs.length > 0
         ? Math.round(sleepLogs.reduce((acc, s) => acc + (s.duration || 0), 0) / sleepLogs.length)
         : 0;
-
     const avgMood =
       moodLogs.length > 0
         ? Math.round((moodLogs.reduce((acc, m) => acc + m.moodScore, 0) / moodLogs.length) * 10) /
           10
         : 0;
 
-    return {
-      summary: `Analyzed ${sleepLogs.length} sleep logs, ${waterLogs.length} hydration entries, and ${moodLogs.length} mood records over the past 14 days.`,
-      sleepQualityTrend:
-        avgSleepMins > 0
-          ? `Averaging ${Math.floor(avgSleepMins / 60)}h ${avgSleepMins % 60}m sleep per night.`
-          : 'No sleep data recorded.',
-      hydrationCompliance:
-        waterLogs.length > 0
-          ? `Logged water on ${waterLogs.length} instances.`
-          : 'Hydration tracking is inactive.',
-      moodCorrelation:
-        avgMood > 0 ? `Average mood score is ${avgMood}/10.` : 'No mood entries recorded.',
-      recommendations: [
-        'Maintain a consistent sleep window within +/- 30 minutes every evening.',
-        'Drink 500ml of water immediately upon waking.',
-        'Pair your morning hydration with a quick mood check-in.',
-      ],
+    const stats = {
+      sleepLogs: sleepLogs.length,
+      waterLogs: waterLogs.length,
+      moodLogs: moodLogs.length,
+      avgSleepMins,
+      avgMood,
     };
+
+    try {
+      const providerFactory = new ProviderFactory();
+      const provider = await providerFactory.getProvider(userId);
+      const { systemPrompt, userPrompt } = buildHealthAnalysisPrompt(stats);
+
+      const response = await provider.generateStructured(userPrompt, systemPrompt);
+      const parsed = aiHealthAnalysisSchema.parse(response);
+      return parsed;
+    } catch (error) {
+      console.warn(`[LifeOS] Failed to generate AI health analysis:`, error);
+      return {
+        summary: `Analyzed ${sleepLogs.length} sleep logs, ${waterLogs.length} hydration entries, and ${moodLogs.length} mood records over the past 14 days.`,
+        sleepQualityTrend:
+          avgSleepMins > 0
+            ? `Averaging ${Math.floor(avgSleepMins / 60)}h ${avgSleepMins % 60}m sleep per night.`
+            : 'No sleep data recorded.',
+        hydrationCompliance:
+          waterLogs.length > 0
+            ? `Logged water on ${waterLogs.length} instances.`
+            : 'Hydration tracking is inactive.',
+        moodCorrelation:
+          avgMood > 0 ? `Average mood score is ${avgMood}/10.` : 'No mood entries recorded.',
+        recommendations: [
+          'Maintain a consistent sleep window within +/- 30 minutes every evening.',
+          'Drink 500ml of water immediately upon waking.',
+        ],
+      };
+    }
   }
 }

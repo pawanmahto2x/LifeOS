@@ -27,6 +27,18 @@ const envSchema = z.object({
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
+
+  // AI Provider Configuration (System Default)
+  AI_PROVIDER: z
+    .enum(['ollama', 'openrouter', 'gemini', 'groq', 'claude', 'huggingface'])
+    .optional(),
+  AI_MODEL: z.string().optional(),
+  AI_BASE_URL: z.string().optional(),
+  AI_API_KEY: z.string().optional(),
+  AI_TIMEOUT_MS: z
+    .string()
+    .default('30000')
+    .transform((val) => parseInt(val, 10)),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

@@ -27,6 +27,7 @@ export const reminderTimeSchema = z
 export const createHabitSchema = z.object({
   title: z.string().trim().min(1, 'Habit title is required'),
   description: z.string().trim().max(500, 'Description cannot exceed 500 characters').optional(),
+  goalId: z.string().optional(),
   frequency: habitFrequencyEnum.default('Daily'),
   targetDays: z.coerce
     .number()

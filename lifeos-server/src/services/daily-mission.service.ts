@@ -17,26 +17,21 @@ import {
   ICommunityMissionItem,
 } from '../types/daily-mission.types';
 import { NotFoundError } from '../utils/errors';
+import { TimezoneUtil } from '../utils/timezone.util';
 
 export class DailyMissionService {
   constructor(private repo: DailyMissionRepository = new DailyMissionRepository()) {}
 
-  private getStartOfDay(date: Date = new Date()): Date {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  }
-
-  private getEndOfDay(date: Date = new Date()): Date {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-  }
-
   private addDays(date: Date, days: number): Date {
     const result = new Date(date);
-    result.setDate(result.getDate() + days);
+    result.setUTCDate(result.getUTCDate() + days);
     return result;
   }
 
+  // LEGACY RULE-BASED IMPLEMENTATION: This currently uses threshold logic and is NOT genuine LLM output. Will be replaced in future phases.
   async classifyDayType(userId: string): Promise<{ dayType: DayType; reasons: string[] }> {
-    const today = this.getStartOfDay();
+    const tz = await TimezoneUtil.getUserTimezone(userId);
+    const today = TimezoneUtil.getStartOfDayUTCForTimezone(tz);
     const yesterday = this.addDays(today, -1);
 
     // 1. Get last night's sleep
@@ -50,7 +45,7 @@ export class DailyMissionService {
     // 2. Get latest mood
     const mood = await MoodLog.findOne({
       userId,
-      timestamp: { $gte: this.getStartOfDay(yesterday) },
+      timestamp: { $gte: yesterday },
     })
       .sort({ timestamp: -1 })
       .exec();
@@ -279,7 +274,8 @@ export class DailyMissionService {
   }
 
   async generatePersonalReminder(userId: string): Promise<string> {
-    const today = this.getStartOfDay();
+    const tz = await TimezoneUtil.getUserTimezone(userId);
+    const today = TimezoneUtil.getStartOfDayUTCForTimezone(tz);
     const yesterday = this.addDays(today, -1);
     const thirtyDaysAgo = this.addDays(today, -30);
 
@@ -319,8 +315,9 @@ export class DailyMissionService {
   }
 
   async generateMission(userId: string) {
-    const today = new Date();
-    const existing = await this.repo.findToday(userId);
+    const tz = await TimezoneUtil.getUserTimezone(userId);
+    const todayDate = TimezoneUtil.getStartOfDayUTCForTimezone(tz);
+    const existing = await this.repo.findByDate(userId, todayDate);
     if (existing) return existing;
 
     const { dayType, reasons } = await this.classifyDayType(userId);
@@ -343,23 +340,45 @@ export class DailyMissionService {
       status: 'active' as const,
     };
 
-    return this.repo.upsertMission(userId, today, data);
+    return this.repo.upsertMission(userId, todayDate, data);
   }
 
   async getTodayMission(userId: string) {
-    const mission = await this.repo.findToday(userId);
+    const tz = await TimezoneUtil.getUserTimezone(userId);
+    const todayDate = TimezoneUtil.getStartOfDayUTCForTimezone(tz);
+    const mission = await this.repo.findByDate(userId, todayDate);
     if (!mission) throw new NotFoundError('No mission generated for today.');
+
+    let modified = false;
+
+    // Sync primary mission with actual Task
+    if (mission.primaryMission && mission.primaryMission.taskId) {
+      const task = await Task.findById(mission.primaryMission.taskId);
+      if (task) {
+        const isTaskCompleted = task.status === 'Completed';
+        if (mission.primaryMission.completed !== isTaskCompleted) {
+          mission.primaryMission.completed = isTaskCompleted;
+          modified = true;
+        }
+      }
+    }
+
+    if (modified) {
+      await mission.save();
+    }
     return mission;
   }
 
   async submitReview(userId: string, missionId: string, reviewInput: ISubmitReviewInput) {
-    const mission = await this.repo.findToday(userId);
+    const tz = await TimezoneUtil.getUserTimezone(userId);
+    const todayDate = TimezoneUtil.getStartOfDayUTCForTimezone(tz);
+    const mission = await this.repo.findByDate(userId, todayDate);
     if (!mission || mission._id.toString() !== missionId) {
       throw new NotFoundError('Mission not found or not active today.');
     }
 
-    const today = this.getStartOfDay();
-    const tomorrow = this.getEndOfDay();
+    const today = TimezoneUtil.getStartOfDayUTCForTimezone(tz);
+    const tomorrow = TimezoneUtil.getEndOfDayUTCForTimezone(tz);
 
     const completedTasks = await Task.countDocuments({
       userId,
@@ -480,11 +499,21 @@ export class DailyMissionService {
   }
 
   async toggleMissionItem(userId: string, input: IToggleMissionItemInput): Promise<any> {
-    const mission = await this.repo.findToday(userId);
+    const tz = await TimezoneUtil.getUserTimezone(userId);
+    const todayDate = TimezoneUtil.getStartOfDayUTCForTimezone(tz);
+    const mission = await this.repo.findByDate(userId, todayDate);
     if (!mission) throw new NotFoundError('No mission generated for today.');
 
     if (input.itemType === 'primary' && mission.primaryMission) {
       mission.primaryMission.completed = input.completed;
+      if (mission.primaryMission.taskId) {
+        const task = await Task.findById(mission.primaryMission.taskId);
+        if (task && task.userId.toString() === userId) {
+          task.status = input.completed ? 'Completed' : 'Pending';
+          task.completedAt = input.completed ? new Date() : undefined;
+          await task.save();
+        }
+      }
     } else if (
       input.itemType === 'supporting' &&
       mission.supportingGoals &&

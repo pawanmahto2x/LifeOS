@@ -13,6 +13,11 @@ const habitSchema = new Schema<IHabitDocument>(
       required: [true, 'User reference is required'],
       index: true,
     },
+    goalId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Goal',
+      index: true,
+    },
     title: {
       type: String,
       required: [true, 'Habit title is required'],

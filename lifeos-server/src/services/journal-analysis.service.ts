@@ -12,6 +12,9 @@ import { Task } from '../models/task.model';
 import { FocusSession } from '../models/focus-session.model';
 import { SleepLog } from '../models/sleep-log.model';
 import { WaterLog } from '../models/water-log.model';
+import { ProviderFactory } from '../ai/provider.factory';
+import { aiJournalAnalysisSchema } from '../ai/schemas/journal-analysis.schema';
+import { buildJournalAnalysisPrompt } from '../ai/prompts/journal-analysis.prompt';
 
 export class JournalAnalysisService {
   constructor(private repo: JournalAnalysisRepository = new JournalAnalysisRepository()) {}
@@ -222,6 +225,7 @@ export class JournalAnalysisService {
     neutral: ['okay', 'fine', 'alright', 'normal', 'average', 'so-so'],
   };
 
+  // LEGACY RULE-BASED IMPLEMENTATION: This currently uses dictionary-based keyword matching and is NOT genuine LLM output. Will be replaced in future phases.
   private extractThemes(content: string): JournalTheme[] {
     const lowerContent = content.toLowerCase();
     const foundThemes = new Set<JournalTheme>();
@@ -376,10 +380,33 @@ export class JournalAnalysisService {
     }
 
     const content = journal.get('content') || '';
-    const themes = this.extractThemes(content);
-    const mood = this.extractMood(content);
-    const energy = this.extractEnergy(content);
-    const keyPhrases = this.extractKeyPhrases(content);
+
+    let themes: JournalTheme[] = [];
+    let mood: string | null = null;
+    let energy: 'high' | 'medium' | 'low' | null = null;
+    let keyPhrases: string[] = [];
+
+    try {
+      const providerFactory = new ProviderFactory();
+      const provider = await providerFactory.getProvider(userId);
+      const { systemPrompt, userPrompt } = buildJournalAnalysisPrompt(content);
+
+      const response = await provider.generateStructured(userPrompt, systemPrompt);
+      const parsed = aiJournalAnalysisSchema.parse(response);
+
+      themes = parsed.themes as JournalTheme[];
+      mood = parsed.extractedMood;
+      energy = parsed.extractedEnergy;
+      keyPhrases = parsed.keyPhrases;
+    } catch (error) {
+      console.warn(`[LifeOS] Failed to generate AI journal analysis:`, error);
+      // Fallback to legacy dictionary extraction if AI fails
+      themes = this.extractThemes(content);
+      mood = this.extractMood(content);
+      energy = this.extractEnergy(content);
+      keyPhrases = this.extractKeyPhrases(content);
+    }
+
     const dataConnections = await this.buildDataConnections(userId, content, themes);
 
     const doc = await this.repo.upsertAnalysis(userId, journalId, {

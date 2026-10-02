@@ -5,6 +5,7 @@ export type HabitFrequency = 'Daily' | 'Weekly' | 'Monthly';
 export interface IHabit {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
+  goalId?: Types.ObjectId;
   title: string;
   description?: string;
   frequency: HabitFrequency;
@@ -32,6 +33,7 @@ export interface IHabitHistory {
 
 export interface ICreateHabitDto {
   userId: string;
+  goalId?: string;
   title: string;
   description?: string;
   frequency?: HabitFrequency;

@@ -21,6 +21,7 @@ import { SleepLogDocument } from '../models/sleep-log.model';
 import { MoodLogDocument } from '../models/mood-log.model';
 import { HealthSummary, WaterUnit, SleepQuality, MoodType } from '../types/health.types';
 import { NotFoundError, ForbiddenError, ValidationError } from '../utils/errors';
+import { TimezoneUtil } from '../utils/timezone.util';
 
 export class HealthService {
   private waterRepo: WaterLogRepository;
@@ -75,11 +76,9 @@ export class HealthService {
 
     const paginated = await this.waterRepo.findByUser(filterOptions);
 
-    // Calculate today's total ml
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    const endOfToday = new Date();
-    endOfToday.setHours(23, 59, 59, 999);
+    const tz = await TimezoneUtil.getUserTimezone(userId);
+    const startOfToday = TimezoneUtil.getStartOfDayUTCForTimezone(tz);
+    const endOfToday = TimezoneUtil.getEndOfDayUTCForTimezone(tz);
 
     const todayLogs = await this.waterRepo.findByDateRange(userId, startOfToday, endOfToday);
     const todayTotalMl = todayLogs.reduce((acc, log) => {
@@ -336,13 +335,12 @@ export class HealthService {
   // ==========================================
 
   async getHealthSummary(userId: string): Promise<HealthSummary> {
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const tz = await TimezoneUtil.getUserTimezone(userId);
+    const startOfToday = TimezoneUtil.getStartOfDayUTCForTimezone(tz);
+    const endOfToday = TimezoneUtil.getEndOfDayUTCForTimezone(tz);
 
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(startOfToday);
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
 
     // Parallel fetch for real database values
     const [todayWaterLogs, lastSleep, sevenDaySleepLogs, latestMood, sevenDayMoodLogs] =

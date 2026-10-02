@@ -1,15 +1,19 @@
 import { z } from 'zod';
 
 export const saveAISettingsSchema = z.object({
-  provider: z.enum(['openai', 'gemini', 'claude', 'groq', 'openrouter']),
-  apiKey: z.string().min(8, 'API key is too short').max(256),
+  provider: z.enum(['openai', 'gemini', 'claude', 'groq', 'openrouter', 'ollama', 'huggingface']),
+  apiKey: z.string().min(8, 'API key is too short').max(256).optional(),
+  baseUrl: z.string().url().optional(),
   model: z.string().min(2).max(100),
   isEnabled: z.boolean().default(true),
 });
 
 export const updateAISettingsSchema = z.object({
-  provider: z.enum(['openai', 'gemini', 'claude', 'groq', 'openrouter']).optional(),
+  provider: z
+    .enum(['openai', 'gemini', 'claude', 'groq', 'openrouter', 'ollama', 'huggingface'])
+    .optional(),
   apiKey: z.string().min(8).max(256).optional(),
+  baseUrl: z.string().url().optional(),
   model: z.string().min(2).max(100).optional(),
   isEnabled: z.boolean().optional(),
 });

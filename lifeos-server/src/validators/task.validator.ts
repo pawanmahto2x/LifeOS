@@ -7,6 +7,8 @@ export const createTaskSchema = z.object({
   title: z.string().trim().min(1, 'Task title is required'),
   description: z.string().trim().optional(),
   category: z.string().trim().optional(),
+  goalId: z.string().optional(),
+  milestoneId: z.string().optional(),
   priority: taskPriorityEnum.default('Medium'),
   dueDate: z.coerce.date().optional(),
   reminder: z.coerce.date().optional(),

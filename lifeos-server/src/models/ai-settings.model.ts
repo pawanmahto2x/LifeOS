@@ -5,7 +5,8 @@ export interface AISettingsDocument {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
   provider: AIProvider;
-  encryptedApiKey: string;
+  encryptedApiKey?: string;
+  baseUrl?: string;
   model: string;
   isEnabled: boolean;
   createdAt: Date;
@@ -18,10 +19,11 @@ const AISettingsSchema = new Schema<AISettingsDocument>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     provider: {
       type: String,
-      enum: ['openai', 'gemini', 'claude', 'groq', 'openrouter'],
+      enum: ['openai', 'gemini', 'claude', 'groq', 'openrouter', 'ollama', 'huggingface'],
       required: true,
     },
-    encryptedApiKey: { type: String, required: true },
+    encryptedApiKey: { type: String, required: false },
+    baseUrl: { type: String, required: false },
     model: { type: String, required: true, trim: true },
     isEnabled: { type: Boolean, default: true, required: true },
   },

@@ -86,13 +86,25 @@ function TasksContent() {
   };
 
   const sortedTasks = [...tasks].sort((a, b) => {
+    // 1. Completed tasks go to the bottom
     if (a.status === 'Completed' && b.status !== 'Completed') return 1;
     if (a.status !== 'Completed' && b.status === 'Completed') return -1;
+
+    // 2. Sort by Priority (Descending)
     const weightA = priorityWeight[a.priority] || 0;
     const weightB = priorityWeight[b.priority] || 0;
     if (weightA !== weightB) {
       return weightB - weightA;
     }
+
+    // 3. Sort by Due Date (Ascending - nearest deadline first)
+    if (a.dueDate && b.dueDate) {
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    }
+    if (a.dueDate && !b.dueDate) return -1;
+    if (!a.dueDate && b.dueDate) return 1;
+
+    // 4. Fallback to CreatedAt (Descending)
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 

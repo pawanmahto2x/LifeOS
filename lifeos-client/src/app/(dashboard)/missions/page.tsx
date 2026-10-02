@@ -233,10 +233,7 @@ export default function MissionsPage() {
             </p>
             {mission.primaryMission.taskId && (
               <div className="mt-4">
-                <Link
-                  href={`/tasks/${mission.primaryMission.taskId}`}
-                  className="text-primary text-sm font-medium hover:underline"
-                >
+                <Link href="/tasks" className="text-primary text-sm font-medium hover:underline">
                   View related task &rarr;
                 </Link>
               </div>

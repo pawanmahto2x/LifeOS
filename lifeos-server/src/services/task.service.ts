@@ -3,10 +3,19 @@ import { ITaskDocument } from '../models/task.model';
 import { ICreateTaskInput, IUpdateTaskInput, IQueryTasksInput } from '../validators/task.validator';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
 
+import { Goal } from '../models/goal.model';
+
 export class TaskService {
   constructor(private repo: TaskRepository = taskRepository) {}
 
   async createTask(userId: string, input: ICreateTaskInput): Promise<ITaskDocument> {
+    if (input.goalId) {
+      const goal = await Goal.findOne({ _id: input.goalId, userId }).exec();
+      if (!goal) {
+        throw new ForbiddenError('You do not have access to this goal or it does not exist');
+      }
+    }
+
     return this.repo.create({
       userId,
       ...input,

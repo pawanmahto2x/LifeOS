@@ -171,11 +171,23 @@ export default function DashboardPage() {
   };
 
   const prioritizedTasks = [...tasks].sort((a: any, b: any) => {
+    // 1. Completed tasks go to the bottom
     if (a.status === 'Completed' && b.status !== 'Completed') return 1;
     if (a.status !== 'Completed' && b.status === 'Completed') return -1;
+
+    // 2. Sort by Priority (Descending)
     const weightA = priorityWeight[a.priority] || 0;
     const weightB = priorityWeight[b.priority] || 0;
     if (weightA !== weightB) return weightB - weightA;
+
+    // 3. Sort by Due Date (Ascending)
+    if (a.dueDate && b.dueDate) {
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    }
+    if (a.dueDate && !b.dueDate) return -1;
+    if (!a.dueDate && b.dueDate) return 1;
+
+    // 4. Fallback to CreatedAt (Descending)
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
@@ -709,12 +721,18 @@ export default function DashboardPage() {
                   className="border-border/80 bg-muted/30 hover:bg-muted/60 flex items-center justify-between rounded-xl border p-3 transition-colors"
                 >
                   <div className="flex items-center space-x-2.5 truncate">
-                    <Flame
-                      className={`h-3.5 w-3.5 ${
-                        habit.currentStreak > 0 ? 'text-amber-500' : 'text-muted-foreground'
-                      }`}
-                    />
-                    <span className="text-foreground truncate text-xs font-medium">
+                    {habit.isCompletedToday ? (
+                      <CheckSquare className="h-3.5 w-3.5 text-emerald-500" />
+                    ) : (
+                      <Flame
+                        className={`h-3.5 w-3.5 ${
+                          habit.currentStreak > 0 ? 'text-amber-500' : 'text-muted-foreground'
+                        }`}
+                      />
+                    )}
+                    <span
+                      className={`truncate text-xs font-medium ${habit.isCompletedToday ? 'text-muted-foreground line-through' : 'text-foreground'}`}
+                    >
                       {habit.title}
                     </span>
                   </div>

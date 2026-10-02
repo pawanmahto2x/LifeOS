@@ -9,8 +9,9 @@ const activityLogSchema = new Schema<IActivityLogDocument>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     type: {
       type: String,
-      enum: ['running', 'gym', 'cycling', 'swimming', 'yoga', 'other'],
       required: true,
+      trim: true,
+      lowercase: true,
     },
     duration: { type: Number, required: true },
     calories: { type: Number },

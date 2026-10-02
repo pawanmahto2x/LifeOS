@@ -6,6 +6,8 @@ export type TaskStatus = 'Pending' | 'In Progress' | 'Completed' | 'Archived';
 export interface ITask {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
+  goalId?: Types.ObjectId;
+  milestoneId?: Types.ObjectId;
   title: string;
   description?: string;
   category?: string;
@@ -21,6 +23,8 @@ export interface ITask {
 
 export interface ICreateTaskDto {
   userId: string;
+  goalId?: string;
+  milestoneId?: string;
   title: string;
   description?: string;
   category?: string;

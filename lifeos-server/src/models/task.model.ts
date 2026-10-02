@@ -13,6 +13,15 @@ const taskSchema = new Schema<ITaskDocument>(
       required: [true, 'User reference is required'],
       index: true,
     },
+    goalId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Goal',
+      index: true,
+    },
+    milestoneId: {
+      type: Schema.Types.ObjectId,
+      index: true,
+    },
     title: {
       type: String,
       required: [true, 'Task title is required'],

@@ -1,12 +1,14 @@
 import { Types } from 'mongoose';
 
-export type AIProvider = 'openai' | 'gemini' | 'claude' | 'groq' | 'openrouter';
+export type AIProvider =
+  'openai' | 'gemini' | 'claude' | 'groq' | 'openrouter' | 'ollama' | 'huggingface';
 
 export interface IAISettings {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
   provider: AIProvider;
-  encryptedApiKey: string;
+  encryptedApiKey?: string;
+  baseUrl?: string;
   model: string;
   isEnabled: boolean;
   createdAt: Date;
@@ -16,13 +18,15 @@ export interface IAISettings {
 export interface IAISettingsPublicDto {
   provider: AIProvider;
   model: string;
+  baseUrl?: string;
   isEnabled: boolean;
   hasKey: boolean;
 }
 
 export interface ISaveAISettingsDto {
   provider: AIProvider;
-  apiKey: string;
+  apiKey?: string;
+  baseUrl?: string;
   model: string;
   isEnabled?: boolean;
 }
@@ -30,6 +34,7 @@ export interface ISaveAISettingsDto {
 export interface IUpdateAISettingsDto {
   provider?: AIProvider;
   apiKey?: string;
+  baseUrl?: string;
   model?: string;
   isEnabled?: boolean;
 }

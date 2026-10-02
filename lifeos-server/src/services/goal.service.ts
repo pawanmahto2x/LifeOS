@@ -5,6 +5,9 @@ import { IAIGoalPlan, IGoalReport } from '../types/goal.types';
 import { Task } from '../models/task.model';
 import { Habit } from '../models/habit.model';
 import { FocusSession } from '../models/focus-session.model';
+import { ProviderFactory } from '../ai/provider.factory';
+import { aiGoalPlanSchema } from '../ai/schemas/goal-plan.schema';
+import { buildGoalPlannerPrompt } from '../ai/prompts/goal-planner.prompt';
 
 export class GoalService {
   constructor(private goalRepository: GoalRepository = new GoalRepository()) {}
@@ -63,122 +66,59 @@ export class GoalService {
     return deleted;
   }
 
+  private providerFactory = new ProviderFactory();
+
   async generateAIPlan(goalId: string, userId: string): Promise<IAIGoalPlan> {
     const goal = await this.findById(goalId, userId);
-    const title = goal.title.toLowerCase();
-    let plan: IAIGoalPlan;
 
-    if (
-      title.includes('developer') ||
-      title.includes('full stack') ||
-      title.includes('software') ||
-      title.includes('coding') ||
-      title.includes('react')
-    ) {
-      plan = {
-        milestones: [
-          'Strengthen JavaScript Fundamentals',
-          'Master Modern React & State Management',
-          'Learn Backend Development with Node.js & Express',
-          'Database Design & Modeling with MongoDB',
-          'Build and Deploy 2 Production-Ready Full-Stack Projects',
-          'Portfolio Architecture & Resume Refinement',
-          'Interview Preparation & Technical Assessment Practice',
-        ],
-        tasks: [
-          { milestoneIndex: 0, title: 'Deep dive into JS Closures, Promises & Event Loop' },
-          { milestoneIndex: 1, title: 'Build a interactive React application with Custom Hooks' },
-          { milestoneIndex: 2, title: 'Implement RESTful APIs with JWT authentication in Node.js' },
-          { milestoneIndex: 3, title: 'Design normalized and embedded data models in MongoDB' },
-          { milestoneIndex: 4, title: 'Deploy full-stack project on cloud hosting with CI/CD' },
-        ],
-        habits: [
-          { title: 'Code for 60 minutes daily', frequency: 'daily' },
-          { title: 'Solve 2 technical problem-solving challenges', frequency: 'daily' },
-          { title: 'Read engineering documentation for 20 minutes', frequency: 'daily' },
-        ],
-      };
-    } else if (
-      title.includes('ai') ||
-      title.includes('machine learning') ||
-      title.includes('data science') ||
-      title.includes('python')
-    ) {
-      plan = {
-        milestones: [
-          'Python Mastery & Scientific Computing (NumPy, Pandas)',
-          'Mathematics for ML (Linear Algebra, Calculus, Probability)',
-          'Classical Machine Learning Algorithms & Scikit-Learn',
-          'Deep Learning & Neural Networks with PyTorch',
-          'LLM Fine-Tuning & Vector Databases (RAG)',
-          'End-to-End MLOps Pipeline & Model Deployment',
-        ],
-        tasks: [
-          {
-            milestoneIndex: 0,
-            title: 'Complete Python advanced concepts and data manipulation exercises',
-          },
-          { milestoneIndex: 1, title: 'Implement gradient descent from scratch' },
-          { milestoneIndex: 2, title: 'Train and evaluate classification and regression models' },
-          {
-            milestoneIndex: 4,
-            title: 'Build a semantic search application using embeddings and vector search',
-          },
-        ],
-        habits: [
-          { title: 'Study ML theory & code for 60 minutes', frequency: 'daily' },
-          { title: 'Read 1 research paper or technical blog weekly', frequency: 'weekly' },
-        ],
-      };
-    } else if (
-      goal.category === 'health' ||
-      goal.category === 'fitness' ||
-      title.includes('fit') ||
-      title.includes('weight') ||
-      title.includes('workout') ||
-      title.includes('exercise')
-    ) {
-      plan = {
-        milestones: [
-          'Establish Health Baseline & Medical/Screening Clearance',
-          'Build Consistent Routine (Weeks 1-4)',
-          'Progressive Overload & Habit Solidification (Weeks 5-8)',
-          'Reach Milestone Body & Energy Targets (Weeks 9-12)',
-        ],
-        tasks: [
-          { milestoneIndex: 0, title: 'Record starting height, weight, and baseline metrics' },
-          { milestoneIndex: 1, title: 'Schedule 3 specific weekly workout times in calendar' },
-          { milestoneIndex: 1, title: 'Prepare high-protein, balanced meal plan for the week' },
-          { milestoneIndex: 2, title: 'Log workout duration and intensity in Health module' },
-        ],
-        habits: [
-          { title: 'Exercise 4 days per week', frequency: 'weekly' },
-          { title: 'Drink at least 2.5L water daily', frequency: 'daily' },
-          { title: 'Maintain a consistent 7-8 hour sleep schedule', frequency: 'daily' },
-        ],
-      };
-    } else {
-      plan = {
-        milestones: [
-          'Strategic Planning & Clear Success Criteria',
-          'Foundation & Initial Execution',
-          'Consistency & Overcoming Plateaus',
-          'Review, Refinement & Optimization',
-          'Final Milestone Delivery & Celebration',
-        ],
-        tasks: [
-          { milestoneIndex: 0, title: 'Define measurable output criteria for this goal' },
-          { milestoneIndex: 1, title: 'Complete first actionable task' },
-          { milestoneIndex: 2, title: 'Conduct mid-way evaluation against baseline' },
-        ],
-        habits: [
-          { title: 'Dedicate 45 minutes focused work on goal', frequency: 'daily' },
-          { title: 'Weekly progress and obstacle reflection', frequency: 'weekly' },
-        ],
-      };
+    try {
+      const provider = await this.providerFactory.getProvider(userId);
+      const { systemPrompt, userPrompt } = buildGoalPlannerPrompt({
+        title: goal.title,
+        description: goal.description,
+        category: goal.category,
+        deadline: goal.deadline,
+      });
+
+      let attempts = 0;
+      let lastError: any = null;
+
+      while (attempts < 2) {
+        try {
+          const rawOutput = await provider.generateStructured(userPrompt, systemPrompt);
+
+          // Zod Validation
+          const parsedPlan = aiGoalPlanSchema.parse(rawOutput);
+
+          // Business Validation
+          const milestoneCount = parsedPlan.milestones.length;
+          const invalidTasks = parsedPlan.tasks.filter(
+            (t) => t.milestoneIndex < 0 || t.milestoneIndex >= milestoneCount,
+          );
+          if (invalidTasks.length > 0) {
+            throw new Error(
+              `Business Validation Failed: Tasks reference invalid milestone indices.`,
+            );
+          }
+
+          return parsedPlan;
+        } catch (error: any) {
+          lastError = error;
+          attempts++;
+        }
+      }
+
+      throw new Error(
+        `Failed to generate a valid AI plan: ${lastError?.message || 'Unknown error'}`,
+      );
+    } catch (error: any) {
+      if (error.name === 'AIConfigurationError') {
+        throw new Error(
+          'AI provider not configured. Please configure an AI provider in Settings to generate a plan.',
+        );
+      }
+      throw error;
     }
-
-    return plan;
   }
 
   async applyAIPlan(
@@ -187,6 +127,17 @@ export class GoalService {
     acceptedPlan: IAIGoalPlan,
   ): Promise<IGoalDocument> {
     const goal = await this.findById(goalId, userId);
+
+    // Business validation: Ensure all tasks reference valid milestone indices
+    if (acceptedPlan.tasks && acceptedPlan.tasks.length > 0) {
+      const milestoneCount = acceptedPlan.milestones.length;
+      const invalidTasks = acceptedPlan.tasks.filter(
+        (t) => t.milestoneIndex < 0 || t.milestoneIndex >= milestoneCount,
+      );
+      if (invalidTasks.length > 0) {
+        throw new Error('Business Validation Failed: Tasks reference invalid milestone indices.');
+      }
+    }
 
     const newMilestones = acceptedPlan.milestones.map((title, index) => ({
       title,
@@ -201,8 +152,18 @@ export class GoalService {
     // Create tasks for accepted plan
     if (acceptedPlan.tasks && acceptedPlan.tasks.length > 0) {
       for (const taskData of acceptedPlan.tasks) {
+        let milestoneId;
+        if (
+          taskData.milestoneIndex !== undefined &&
+          taskData.milestoneIndex >= 0 &&
+          taskData.milestoneIndex < goal.milestones.length
+        ) {
+          milestoneId = goal.milestones[taskData.milestoneIndex]._id;
+        }
         await Task.create({
           userId,
+          goalId: goal._id,
+          milestoneId,
           title: taskData.title,
           category: goal.category
             ? goal.category.charAt(0).toUpperCase() + goal.category.slice(1)
@@ -219,6 +180,7 @@ export class GoalService {
       for (const habitData of acceptedPlan.habits) {
         await Habit.create({
           userId,
+          goalId: goal._id,
           title: habitData.title,
           frequency: habitData.frequency === 'weekly' ? 'Weekly' : 'Daily',
           targetDays: habitData.frequency === 'weekly' ? 3 : 7,
@@ -229,6 +191,7 @@ export class GoalService {
     return goal;
   }
 
+  // LEGACY RULE-BASED IMPLEMENTATION: This currently uses threshold logic and is NOT genuine LLM output. Will be replaced in future phases.
   async generateGoalReport(goalId: string, userId: string): Promise<IGoalReport> {
     const goal = await this.findById(goalId, userId);
     const thirtyDaysAgo = new Date();

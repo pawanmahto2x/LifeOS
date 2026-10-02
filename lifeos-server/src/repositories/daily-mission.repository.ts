@@ -3,15 +3,10 @@ import { IDailyReview } from '../types/daily-mission.types';
 
 export class DailyMissionRepository {
   async findByDate(userId: string, date: Date): Promise<IDailyMissionDocument | null> {
-    const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     return DailyMission.findOne({
       userId,
-      date: targetDate,
+      date: date,
     }).exec();
-  }
-
-  async findToday(userId: string): Promise<IDailyMissionDocument | null> {
-    return this.findByDate(userId, new Date());
   }
 
   async upsertMission(
@@ -19,11 +14,9 @@ export class DailyMissionRepository {
     date: Date,
     data: Partial<IDailyMissionDocument>,
   ): Promise<IDailyMissionDocument> {
-    const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
     return DailyMission.findOneAndUpdate(
-      { userId, date: targetDate },
-      { $set: { ...data, userId, date: targetDate } },
+      { userId, date },
+      { $set: { ...data, userId, date } },
       { new: true, upsert: true },
     ).exec();
   }

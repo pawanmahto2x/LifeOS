@@ -21,43 +21,42 @@ import { WaterLog } from '../models/water-log.model';
 import { MoodLog } from '../models/mood-log.model';
 import { Journal } from '../models/journal.model';
 import { JournalAnalysis } from '../models/journal-analysis.model';
+import { TimezoneUtil } from '../utils/timezone.util';
 
 export class LifeReplayService {
   constructor(private repository = new LifeReplayRepository()) {}
 
-  private getDateRange(period: ReplayPeriod, refDate: Date = new Date()) {
-    const d = new Date(refDate);
-    const currentStart = new Date(d);
-    const currentEnd = new Date(d);
-    const prevStart = new Date(d);
-    const prevEnd = new Date(d);
+  private getDateRange(tz: string, period: ReplayPeriod, refDate: Date = new Date()) {
+    const currentStart = TimezoneUtil.getStartOfDayUTCForTimezone(tz, refDate);
+
+    let currentStartPeriod: Date;
+    let currentEndPeriod: Date;
+    let prevStartPeriod: Date;
+    let prevEndPeriod: Date;
 
     if (period === 'weekly') {
-      const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      currentStart.setDate(diff);
-      currentStart.setHours(0, 0, 0, 0);
+      currentStartPeriod = TimezoneUtil.getStartOfWeekForTimezone(currentStart);
+      currentEndPeriod = new Date(currentStartPeriod.getTime() + 7 * 86400000 - 1);
 
-      currentEnd.setDate(currentStart.getDate() + 6);
-      currentEnd.setHours(23, 59, 59, 999);
-
-      prevStart.setTime(currentStart.getTime() - 7 * 24 * 60 * 60 * 1000);
-      prevEnd.setTime(currentEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+      prevStartPeriod = new Date(currentStartPeriod.getTime() - 7 * 86400000);
+      prevEndPeriod = new Date(currentEndPeriod.getTime() - 7 * 86400000);
     } else {
-      currentStart.setDate(1);
-      currentStart.setHours(0, 0, 0, 0);
+      currentStartPeriod = TimezoneUtil.getStartOfMonthForTimezone(currentStart);
+      currentEndPeriod = TimezoneUtil.getEndOfMonthForTimezone(currentStart);
 
-      currentEnd.setMonth(currentEnd.getMonth() + 1, 0);
-      currentEnd.setHours(23, 59, 59, 999);
-
-      prevStart.setMonth(prevStart.getMonth() - 1, 1);
-      prevStart.setHours(0, 0, 0, 0);
-
-      prevEnd.setMonth(prevEnd.getMonth(), 0);
-      prevEnd.setHours(23, 59, 59, 999);
+      const d = new Date(currentStartPeriod);
+      d.setUTCMonth(d.getUTCMonth() - 1);
+      d.setUTCDate(1);
+      prevStartPeriod = d;
+      prevEndPeriod = TimezoneUtil.getEndOfMonthForTimezone(d);
     }
 
-    return { currentStart, currentEnd, prevStart, prevEnd };
+    return {
+      currentStart: currentStartPeriod,
+      currentEnd: currentEndPeriod,
+      prevStart: prevStartPeriod,
+      prevEnd: prevEndPeriod,
+    };
   }
 
   private async aggregateProductivity(
@@ -236,6 +235,7 @@ export class LifeReplayService {
   }
 
   private async detectPatterns(
+    tz: string,
     userId: Types.ObjectId | string,
     start: Date,
     end: Date,
@@ -248,7 +248,7 @@ export class LifeReplayService {
       { $match: { userId: userObjectId, sleepTime: { $gte: start, $lte: end } } },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$sleepTime' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$sleepTime', timezone: tz } },
           duration: { $avg: '$duration' },
         },
       },
@@ -257,7 +257,7 @@ export class LifeReplayService {
       { $match: { userId: userObjectId, completed: true, startedAt: { $gte: start, $lte: end } } },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$startedAt' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$startedAt', timezone: tz } },
           duration: { $sum: '$duration' },
         },
       },
@@ -303,7 +303,7 @@ export class LifeReplayService {
       },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$completionDate' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$completionDate', timezone: tz } },
           count: { $sum: 1 },
         },
       },
@@ -319,7 +319,7 @@ export class LifeReplayService {
       },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$completedAt' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$completedAt', timezone: tz } },
           count: { $sum: 1 },
         },
       },
@@ -343,8 +343,9 @@ export class LifeReplayService {
   }
 
   async generateReplay(userId: string, period: ReplayPeriod, refDate?: Date): Promise<ILifeReplay> {
+    const tz = await TimezoneUtil.getUserTimezone(userId);
     const userObjectId = new Types.ObjectId(userId);
-    const { currentStart, currentEnd, prevStart, prevEnd } = this.getDateRange(period, refDate);
+    const { currentStart, currentEnd, prevStart, prevEnd } = this.getDateRange(tz, period, refDate);
 
     const tasks = await Task.countDocuments({
       userId: userObjectId,
@@ -382,7 +383,7 @@ export class LifeReplayService {
     };
 
     const changes = this.calculateChanges(currentData, prevData);
-    const patterns = await this.detectPatterns(userId, currentStart, currentEnd);
+    const patterns = await this.detectPatterns(tz, userId, currentStart, currentEnd);
 
     const replay = await this.repository.upsertReplay(userId, {
       userId: userObjectId,
