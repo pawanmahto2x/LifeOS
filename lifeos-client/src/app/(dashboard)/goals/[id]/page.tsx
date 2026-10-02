@@ -260,67 +260,73 @@ export default function GoalDetailPage() {
                 </div>
               ) : aiPlanData?.data ? (
                 <div className="relative z-10 space-y-6">
-                  {aiPlanData.data.milestones?.length > 0 && (
-                    <div>
-                      <div className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-wider uppercase">
-                        Proposed Milestones
-                      </div>
-                      <div className="space-y-2">
-                        {aiPlanData.data.milestones.map((m, i) => (
-                          <div
-                            key={i}
-                            className="text-foreground bg-muted/40 border-border/40 flex items-center gap-2.5 rounded-xl border p-2.5 text-xs font-medium"
-                          >
-                            <Target className="text-primary h-4 w-4 shrink-0" />
-                            <span>{typeof m === 'string' ? m : (m as any).title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {aiPlanData.data.tasks?.length > 0 && (
-                    <div>
-                      <div className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-wider uppercase">
-                        Recommended Actionable Tasks
-                      </div>
-                      <div className="space-y-2">
-                        {aiPlanData.data.tasks.map((t, i) => (
-                          <div
-                            key={i}
-                            className="text-foreground bg-muted/40 border-border/40 flex items-center gap-2.5 rounded-xl border p-2.5 text-xs font-medium"
-                          >
-                            <CheckSquare className="h-4 w-4 shrink-0 text-blue-500" />
-                            <span>{t.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {aiPlanData.data.habits?.length > 0 && (
-                    <div>
-                      <div className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-wider uppercase">
-                        Keystone Habits (1-3 Realistic Behaviours)
-                      </div>
-                      <div className="space-y-2">
-                        {aiPlanData.data.habits.map((h, i) => (
-                          <div
-                            key={i}
-                            className="text-foreground bg-muted/40 border-border/40 flex items-center justify-between rounded-xl border p-2.5 text-xs font-medium"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <Repeat className="h-4 w-4 shrink-0 text-emerald-500" />
-                              <span>{h.title}</span>
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    {/* Left: Proposed Milestones (Roadmap) */}
+                    {aiPlanData.data.milestones?.length > 0 && (
+                      <div>
+                        <div className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-wider uppercase">
+                          Proposed Milestones
+                        </div>
+                        <div className="space-y-2">
+                          {aiPlanData.data.milestones.map((m, i) => (
+                            <div
+                              key={i}
+                              className="text-foreground bg-muted/40 border-border/40 flex items-center gap-2.5 rounded-xl border p-2.5 text-xs font-medium"
+                            >
+                              <Target className="text-primary h-4 w-4 shrink-0" />
+                              <span>{typeof m === 'string' ? m : (m as any).title}</span>
                             </div>
-                            <span className="text-muted-foreground bg-background border-border/50 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase">
-                              {h.frequency}
-                            </span>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
+                    )}
+
+                    {/* Right: Recommended Tasks & Keystone Habits */}
+                    <div className="space-y-5">
+                      {aiPlanData.data.tasks?.length > 0 && (
+                        <div>
+                          <div className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-wider uppercase">
+                            Recommended Actionable Tasks
+                          </div>
+                          <div className="space-y-2">
+                            {aiPlanData.data.tasks.map((t, i) => (
+                              <div
+                                key={i}
+                                className="text-foreground bg-muted/40 border-border/40 flex items-center gap-2.5 rounded-xl border p-2.5 text-xs font-medium"
+                              >
+                                <CheckSquare className="h-4 w-4 shrink-0 text-blue-500" />
+                                <span>{t.title}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {aiPlanData.data.habits?.length > 0 && (
+                        <div>
+                          <div className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-wider uppercase">
+                            Keystone Habits (1-3 Realistic Behaviours)
+                          </div>
+                          <div className="space-y-2">
+                            {aiPlanData.data.habits.map((h, i) => (
+                              <div
+                                key={i}
+                                className="text-foreground bg-muted/40 border-border/40 flex items-center justify-between rounded-xl border p-2.5 text-xs font-medium"
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <Repeat className="h-4 w-4 shrink-0 text-emerald-500" />
+                                  <span>{h.title}</span>
+                                </div>
+                                <span className="text-muted-foreground bg-background border-border/50 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase">
+                                  {h.frequency}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
 
                   <div className="border-border/50 flex items-center gap-3 border-t pt-4">
                     <button
